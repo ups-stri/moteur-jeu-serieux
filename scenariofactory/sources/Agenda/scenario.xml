@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario titre="PC">
+	
+	<!-- ------------------------------------------------------------------ -->
+
+	<regle nom="lancement" active="true">
+		<!-- ici pas de conditions mais laisser la balise conditions -->
+		<conditions>
+		</conditions>
+		<evenements>
+			<evenement nom="affiche_initial"/>
+		</evenements>
+	</regle>
+
+	<evenement nom="affiche_initial">
+		<effet cible="agenda" action="rendreVisible" />
+	</evenement>
+
+	<!-- ------------------------------------------------------------------ -->
+
+	<regle nom="clic_pc">
+		<conditions>
+			<condition cible="agenda" methode="clickPC" valeur="true"/>
+		</conditions>
+		<evenements>
+			<evenement nom="affiche_choix"/>
+		</evenements>
+	</regle>
+
+	<evenement nom="affiche_choix">
+		<effet cible="agenda" action="fillAndDisplay" parametre="liste">
+			<liste>
+				<item id="1" label="Eteindre" evenement="eteindre"/>
+				<item id="2" label="Allumer" evenement="allumer"/>
+			</liste>
+		</effet>
+		<effet cible="agenda" action="resetClick" />
+		<effet cible="eteindre" action="rendreActive" typeCible="regle" />
+		<effet cible="allumer" action="rendreActive" typeCible="regle" />
+	</evenement>
+
+	<!-- ------------------------------------------------------------------ -->
+
+	<regle nom="eteindre">
+		<conditions>
+			<condition cible="agenda" methode="getChoice" valeur="eteindre"/>
+		</conditions>
+		<evenements>
+			<evenement nom="eteindre"/>
+		</evenements>
+	</regle>
+		
+	<evenement nom="eteindre">
+		<effet cible="agenda" action="setOff" />
+	</evenement>
+
+	<!-- ------------------------------------------------------------------ -->
+
+	<regle nom="allumer">
+		<conditions>
+			<condition cible="agenda" methode="getChoice" valeur="allumer"/>
+		</conditions>
+		<evenements>
+			<evenement nom="allumer"/>
+		</evenements>
+	</regle>
+		
+	<evenement nom="allumer">
+		<effet cible="agenda" action="setOn" />
+	</evenement>
+
+</scenario>

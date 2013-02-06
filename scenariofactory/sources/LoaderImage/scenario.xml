@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario titre="">
+
+	<!-- toutes les règles inactives au départ sauf "lancement"
+	 -->
+
+	<!-- ============================================================== -->
+	<!-- Règle : SI chargement initial fini ALORS événement d'affichage initial -->
+	<!-- ============================================================== -->
+
+	<regle nom="lancement" active="true">
+		<!-- ici pas de conditions mais laisser la balise conditions -->
+		<conditions>
+		</conditions>
+		<evenements>
+			<evenement nom="affiche_initial"/>
+		</evenements>
+	</regle>
+
+	<evenement nom="affiche_initial">
+		<effet cible="fond" action="afficher" parametre="image">
+			<image source="./actifs/animation_0.swf" />
+		</effet>
+		<effet cible="lancement" action="rendreInactive" typeCible="regle" />
+	</evenement>
+
+</scenario>

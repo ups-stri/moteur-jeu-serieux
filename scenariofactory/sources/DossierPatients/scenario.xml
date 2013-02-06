@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario titre="PC">
+	
+	<!-- ------------------------------------------------------------------ -->
+
+	<regle nom="lancement" active="true">
+		<!-- ici pas de conditions mais laisser la balise conditions -->
+		<conditions>
+		</conditions>
+		<evenements>
+			<evenement nom="affiche_initial"/>
+		</evenements>
+	</regle>
+
+	<evenement nom="affiche_initial">
+		<effet cible="dossierPatients" action="rendreVisible" />
+	</evenement>
+
+</scenario>
