@@ -10,9 +10,13 @@ package scenariofactory.widgets {
 		public var slotBackground:MovieClip;
 
 		// différents états d'un créneau de consultation dans le temps
-		public static const CRENEAU_PASSE:int		= 0;
-		public static const CRENEAU_EN_COURS:int	= 1;
-		public static const CRENEAU_FUTUR:int		= 2;
+		// (INVALIDE indique un créneau qui était consacré à la première
+		//  séance d'un cas, et pour lequel la liste d'actions de vérification
+		//  proposée a été incorrecte, obligeant le joueur à replanifier la séance) 
+		public static const INVALIDE:int	= -1;
+		public static const PASSE:int		= 0;
+		public static const EN_COURS:int	= 1;
+		public static const FUTUR:int		= 2;
 		// état actuel		
 		public var etat:int;
 		
@@ -32,19 +36,22 @@ package scenariofactory.widgets {
 			return this.date.toString() + " [" + this.etat + "]";
 		}
 
-		// fonctions permettant d'appliquer la méthode "filter" sur les vecteurs de AGEND_Slot
+		// fonctions permettant d'appliquer la méthode "filter" sur les vecteurs de creneau
 		// suivant les différents états des créneaux que l'on désire garder
-		public static function creneauEstPasse(creneau:Creneau, indiceCrenau:int, listeCreneaux:Vector.<Creneau>):Boolean {
-			return (creneau.etat == CRENEAU_PASSE);
+		// (la mise de valeurs par défaut aux 2e et 3e arguments
+		//  permet un appel manuel et plus classique de chaque méthode)
+		public static function estPasse(creneau:Creneau, indiceCrenau:int = -1, listeCreneaux:Vector.<Creneau> = null):Boolean {
+			return (creneau.etat == PASSE);
 		}
-		public static function creneauEstPasPasse(creneau:Creneau, indiceCrenau:int, listeCreneaux:Vector.<Creneau>):Boolean {
-			return (creneau.etat != CRENEAU_PASSE);
+		public static function estPasPasse(creneau:Creneau, indiceCrenau:int = -1, listeCreneaux:Vector.<Creneau> = null):Boolean {
+			// on ne retient pas les créneaux invalides
+			return (creneau.etat != PASSE && creneau.etat != INVALIDE);
 		}
-		public static function creneauEstEnCours(creneau:Creneau, indiceCrenau:int, listeCreneaux:Vector.<Creneau>):Boolean {
-			return (creneau.etat == CRENEAU_EN_COURS);
+		public static function estEnCours(creneau:Creneau, indiceCrenau:int = -1, listeCreneaux:Vector.<Creneau> = null):Boolean {
+			return (creneau.etat == EN_COURS);
 		}
-		public static function creneauEstFutur(creneau:Creneau, indiceCrenau:int, listeCreneaux:Vector.<Creneau>):Boolean {
-			return (creneau.etat == CRENEAU_FUTUR);
+		public static function estFutur(creneau:Creneau, indiceCrenau:int = -1, listeCreneaux:Vector.<Creneau> = null):Boolean {
+			return (creneau.etat == FUTUR);
 		}
 		
 		public function compareDateACreneau(d:Date) {
