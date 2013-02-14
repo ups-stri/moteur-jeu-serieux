@@ -61,10 +61,15 @@
 		// liste ordonnée chronologiquement des créneaux créés dans l'agenda pour ce patient
 		private var listeCreneauxAgenda:Vector.<Creneau> = new Vector.<Creneau>();
 		
-		// indice dans cette liste de l'éventuel créneau en cours
-		// (unCreneauEnCours = true alors si un créneau est en cours)
-		public var indiceCreneauEnCours:int = -1;
+		// indice dans cette liste de l'éventuel créneau en cours, sachant que
+		// les créneaux invalidés (première séance avec erreur sur les actions de
+		// vérification ou sur le diagnostic) ne sont pas comptés
+		// (unCreneauEnCours = true alors si un créneau est en cours,
+		//  alors stocké dans creneauEnCours)
+		private static var INDICE_CRENEAU_INIT = -1; // avant le premier créneau
+		public var indiceCreneauEnCours:int = INDICE_CRENEAU_INIT;
 		public var unCreneauEnCours:Boolean = false;
+		private var creneauEnCours:Creneau;
 		
 		public function PatientAgenda(dossierPatients:DossierPatients) {
 			trace("PatientAgenda créé");
@@ -137,16 +142,31 @@
 		
 		// indique que ce créneau est en cours (vient de démarrer) et retourne son indice
 		public function setCreneauEnCours(creneau:Creneau):int {
-			creneau.etat = Creneau.CRENEAU_EN_COURS;
+			creneau.etat = Creneau.EN_COURS;
+			creneauEnCours = creneau;
 			unCreneauEnCours = true;
 			indiceCreneauEnCours++;
+			// mise à jour éventuelle de l'accès aux boutons de validation d'actions
+			dossierPatients.updateProperties();
 			return indiceCreneauEnCours;
+		}
+		
+		// indique que ce créneau est en cours (vient de démarrer) et retourne son indice
+		public function invalideCreneauEnCours():void {
+			creneauEnCours.etat = Creneau.INVALIDE;
+			unCreneauEnCours = false;
+			// TODO : tester ce que ça donne en dehors du premier créneau
+			indiceCreneauEnCours--;
+			// mise à jour éventuelle de l'accès aux boutons de validation d'actions
+			dossierPatients.updateProperties();
 		}
 		
 		// indique que ce créneau est terminé et retourne son indice
 		public function setCreneauPasse(creneau:Creneau):int {
-			creneau.etat = Creneau.CRENEAU_PASSE;
+			creneau.etat = Creneau.PASSE;
 			unCreneauEnCours = false;
+			// mise à jour éventuelle de l'accès aux boutons de validation d'actions
+			dossierPatients.updateProperties();
 			return indiceCreneauEnCours;
 		}
 		

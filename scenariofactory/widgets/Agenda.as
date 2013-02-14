@@ -137,7 +137,7 @@
 			
 			// 1) recueil de tous les créneaux des patients qui ne sont encore passés
 			for each (patient in PatientAgenda.listePatients) {
-				listeCreneauxPatients = listeCreneauxPatients.concat(patient.getListeCreneauxAgenda().filter(Creneau.creneauEstPasPasse));
+				listeCreneauxPatients = listeCreneauxPatients.concat(patient.getListeCreneauxAgenda().filter(Creneau.estPasPasse));
 			}
 			Creneau.trieListeCreneaux(listeCreneauxPatients);
 			trace("Liste des créneaux en cours ou à venir :");
@@ -146,7 +146,7 @@
 			// 2) parcours de ces créneaux à la recherche de :
 			for each (creneau in listeCreneauxPatients) {
 				// 2.a) les créneaux qui viennent de démarrer
-				if (creneau.etat == Creneau.CRENEAU_FUTUR && (creneau.compareDateACreneau(date) >= 0)) {
+				if (creneau.etat == Creneau.FUTUR && (creneau.compareDateACreneau(date) >= 0)) {
 					patient = PatientAgenda.getPatientParId(creneau.idPatient);
 					indiceCreneau = patient.setCreneauEnCours(creneau);
 					civilitePatient = patient.getCivilite();
@@ -157,7 +157,7 @@
 					Scenario.getInstance().messageGeneral.afficherMessage(message);
 				}
 				// 2.b) les créneaux en cours qui viennent de se terminer
-				if (creneau.etat == Creneau.CRENEAU_EN_COURS && (compareDates(date, dateFinCreneau(creneau)) > 0)) {
+				if (creneau.etat == Creneau.EN_COURS && (compareDates(date, dateFinCreneau(creneau)) > 0)) {
 					patient = PatientAgenda.getPatientParId(creneau.idPatient);
 					indiceCreneau/* not used*/ = patient.setCreneauPasse(creneau);
 					civilitePatient = patient.getCivilite();
@@ -253,7 +253,7 @@
 			textDebug.appendText("\nslot: duration : " + durationS.toString());
 			// adding slot on scene;
 			var slot:Creneau = new Creneau;
-			slot.etat = Creneau.CRENEAU_FUTUR;
+			slot.etat = Creneau.FUTUR;
 			slot.duration = 1 / durationS; // en nombre d'heures
 			slot.idPatient = idPatient;
 			slot.x = positionX;

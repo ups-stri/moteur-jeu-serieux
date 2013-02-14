@@ -64,6 +64,7 @@
 			patientProperties.allTabs.addEventListener(MouseEvent.CLICK, functionTabProperties);
 			patientProperties.boutonSauverPatient.addEventListener(MouseEvent.CLICK, HSaveProperties);
 			patientProperties.actionsVerification.listeChoixOrdonnes.boutonValiderChoix.addEventListener(MouseEvent.CLICK, HValiderActionsVerif);
+			patientProperties.diagnostic.boutonValiderDiagnostic.addEventListener(MouseEvent.CLICK, HValiderDiagnostic);
 			patientProperties.contexte.visible				= false;
 			patientProperties.actionsVerification.visible	= false;
 			patientProperties.diagnostic.visible			= false;
@@ -129,7 +130,25 @@
 			}
 			else {
 				message += " ne contient pas toutes les actions requises," +
-				           " réessayez afin d'accéder au diagnostic.";				
+				           " vous ne pouvez pas accéder au diagnostic.";
+				           " Il vous faut replanifier une première séance "
+				           " pour tenter votre chance à nouveau.";				
+			}
+			afficherMessage(message);
+		}
+		
+		private function afficherMsgDiagnostic(statut:Boolean, civilite:String,
+											   listeDiagnosticsCorrects:Array) {
+			message = "Votre diagnostic relatif au patient " + civilite;
+			if (statut) {
+				message += " est bien un diagnostic correct.";
+			}
+			else {
+				message += " est un diagnostic incorrect.";
+				// utiliser Map ci-dessous	
+				message += " Les diagnostics corrects étaient : " +
+				           listeDiagnosticsCorrects.map(Diagnostic.getMaladie).join(", ") +
+						   ".";				
 			}
 			afficherMessage(message);
 		}
@@ -145,6 +164,11 @@
 		public function HValiderActionsVerif(e:MouseEvent):void
 		{
 			validerActionsVerif();
+		}
+
+		public function HValiderDiagnostic(e:MouseEvent):void
+		{
+			validerDiagnostic();
 		}
 
 		public function saveCivilite():void
@@ -259,9 +283,9 @@
 				}
 			}
 			patientProperties.diagnostic.visible = selectedPatient.accesDiagnostic;
+			afficherMsgListeActionsVerif(selectedPatient.accesDiagnostic, selectedPatient.getCivilite());
 			
 			if (selectedPatient.accesDiagnostic) {
-				afficherMsgListeActionsVerif(true, selectedPatient.getCivilite());
 				// récupération et affichage de la liste des diagnostics possibles
 				var listeDiagnostics:Array = cas.listeDiagnostics;
 				selectedPatient.dpListDiagnostics = new DataProvider();
@@ -270,28 +294,56 @@
 					selectedPatient.dpListDiagnostics.addItem({label:diagnostic.maladie});
 				}
 				patientProperties.diagnostic.listDiagnostics.dataProvider = selectedPatient.dpListDiagnostics;
-				
-				// récupération des actions de traitement des séances
-				// *** correspondant à la première thérapie pour le moment
-				// (si cela n'a pas encore été fait)
-				if (selectedPatient.listeActionsTraitementParSeance == null) {
-					var therapie:Therapie = cas.listeTherapies[0];
-					var listeSeances:Array/*Vector.<Seance>*/ = therapie.listeSeances;
-					var listActionsTraitement:Array;
-					selectedPatient.listeActionsTraitementParSeance			= new Array();
-					selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
-					for each (var seance:Seance in listeSeances) {
-						listActionsTraitement = new Array();
-						var listeActions:Array = seance.listeActions;
-						for each (var action:Action in listeActions) {
-							listActionsTraitement.push(action.libelle);
-						}
-						selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
-						selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
-					}
-				}
+			}
+			else {
+				// la séance est invalidée, le joueur va devoir planifier une nouvelle séance
+				selectedPatient.invalideCreneauEnCours();
 			}
 
+		}
+
+		public function validerDiagnostic():void
+		{
+			// on sauvegarde avant de vérifier
+			saveDiagnostic();
+
+			// vérification proprement dite
+			var cas:Cas = selectedPatient.cas;
+			var listeDiagnostics:Array = cas.listeDiagnostics;
+			// on vérifie si le diagnostic choisi est bien un des diagnostics corrects
+			var listeDiagnosticsCorrects:Array = listeDiagnostics.filter(Diagnostic.estCorrect);
+			var diagnosticChoisi = listeDiagnostics[selectedPatient.indiceDiagnosticChoisi];
+			afficherMsgDiagnostic(diagnosticChoisi.correct, selectedPatient.getCivilite(),
+			                      listeDiagnosticsCorrects);
+			if (diagnosticChoisi.correct) {
+				// TODO : attribuer des points au joueur
+			}
+			else {
+				// TODO : attribuer un malus au joueur
+			}
+			
+			// récupération des différentes thérapies proposées
+			
+			// récupération des actions de traitement des séances
+			// *** correspondant à la première thérapie pour le moment
+			// (si cela n'a pas encore été fait)
+			if (selectedPatient.listeActionsTraitementParSeance == null) {
+				var therapie:Therapie = cas.listeTherapies[0];
+				var listeSeances:Array/*Vector.<Seance>*/ = therapie.listeSeances;
+				var listActionsTraitement:Array;
+				selectedPatient.listeActionsTraitementParSeance			= new Array();
+				selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
+				for each (var seance:Seance in listeSeances) {
+					listActionsTraitement = new Array();
+					var listeActions:Array = seance.listeActions;
+					for each (var action:Action in listeActions) {
+						listActionsTraitement.push(action.libelle);
+					}
+					selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
+					selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
+				}
+			}
+				 
 		}
 		
 		public function saveTraitement():void
