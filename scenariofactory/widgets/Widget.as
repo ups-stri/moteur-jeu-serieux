@@ -55,5 +55,17 @@
 				Scenario.getInstance()._bringToFront(e);
 			}
         }
+		
+		//definir la hauteur du widget
+		public function setHeight(liste:Array)
+		{
+			this.height = Number(liste[1]);
+		}
+		
+		//definir la largeur du widget
+		public function setWidth(liste:Array)
+		{
+			this.width = Number(liste[1]);
+		}
 	}
 }
