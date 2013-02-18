@@ -23,5 +23,17 @@
 			trace("   message : "+texte);
 			texteMessage.text = texteMessage.text+texte+"\n";
 		}
+		
+		//definir la hauteur du textarea
+		override public function setHeight(liste:Array)
+		{
+			this.texteMessage.height = Number(liste[1]);
+		}
+		
+		//definir la largeur du textarea
+		override public function setWidth(liste:Array)
+		{
+			this.texteMessage.width = Number(liste[1]);
+		}
 	}
 }
