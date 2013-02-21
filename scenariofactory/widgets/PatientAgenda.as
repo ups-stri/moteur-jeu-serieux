@@ -51,12 +51,25 @@
 		public var listeActionsTraitementChoisiesParSeance:Array;
 
 		public var dpListDiagnostics:DataProvider;
-		
 		public var indiceDiagnosticChoisi:int = -1;
-
+		
+		public var dpCBTherapies:DataProvider;
+		public var indiceTherapieChoisie:int = -1;
+		
 		// l'accès au diagnostic est fourni dès que les actions de vérifications
 		// requises ont été trouvées par le joueur
 		public var accesDiagnostic:Boolean = false;
+		
+		// détermine la visibilité du bouton de choix du diagnostic
+		public var diagnosticChoisi:Boolean = false;
+		
+		// l'accès au traitement est fourni dès qu'une thérapie pertinente
+		// a été choisie par le joueur
+		public var accesTraitement:Boolean = false;
+		
+		// indice de l'éventuelle séance de traitement
+		// (de la thérapie choisie) sélectionnée
+		public var indiceSeanceSelectionee:int = -1;
 		
 		// liste ordonnée chronologiquement des créneaux créés dans l'agenda pour ce patient
 		private var listeCreneauxAgenda:Vector.<Creneau> = new Vector.<Creneau>();
@@ -92,6 +105,7 @@
 			
 			// clic
 			this.addEventListener(MouseEvent.MOUSE_UP, dossierPatients.functionDisplayProperties);
+			
 			// add to list of PatientAgenda;
 			listePatients.push(this);
 		}
@@ -128,6 +142,23 @@
 			return listeActionsTraitementChoisiesParSeance[indiceCreneauEnCours - 1];
 		}
 		
+		public function seanceTraitementSelectionnee():Boolean {
+			return indiceSeanceSelectionee >= 0;
+		}
+		
+		public function getListeActionsTraitementSeanceSelectionee():Array {
+			return listeActionsTraitementParSeance[indiceSeanceSelectionee];
+		}
+		
+		public function getListeActionsTraitementChoisiesSeanceSelectionee():Array {
+			return listeActionsTraitementChoisiesParSeance[indiceSeanceSelectionee];
+		}
+		
+		public function setListeActionsTraitementChoisiesSeanceSelectionee(listeChoixActionsTraitement:Array):void {
+			listeActionsTraitementChoisiesParSeance[indiceSeanceSelectionee] =
+				listeChoixActionsTraitement;
+		}
+		
 		public function traceListeCreneaux():void {
 			trace("Liste des crénaux du patient " + prenomPatient + " " + nomPatient);
 			for each (var creneau:Creneau in listeCreneauxAgenda) {
@@ -146,8 +177,15 @@
 			creneauEnCours = creneau;
 			unCreneauEnCours = true;
 			indiceCreneauEnCours++;
-			// mise à jour éventuelle de l'accès aux boutons de validation d'actions
-			dossierPatients.updateProperties();
+			if (seanceTraitementEnCours()) {
+				// s'il s'agit d'un créneau d'une séance de traitement, sélectionner
+				// la séance en question dans le tableau de la liste des séances
+				dossierPatients.selectionSeanceEnCours(indiceCreneauEnCours - 1);
+			}
+			else {
+				// mise à jour éventuelle de l'accès aux boutons de validation d'actions
+				dossierPatients.updateProperties();
+			}
 			return indiceCreneauEnCours;
 		}
 		

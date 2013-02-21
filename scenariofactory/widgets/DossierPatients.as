@@ -4,7 +4,10 @@
 	import fl.controls.List;
 	import fl.controls.TextArea;
 	import fl.data.DataProvider;
+	import fl.controls.DataGrid;
+	import fl.events.DataGridEvent;
 
+	import flash.events.Event;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
@@ -65,6 +68,8 @@
 			patientProperties.boutonSauverPatient.addEventListener(MouseEvent.CLICK, HSaveProperties);
 			patientProperties.actionsVerification.listeChoixOrdonnes.boutonValiderChoix.addEventListener(MouseEvent.CLICK, HValiderActionsVerif);
 			patientProperties.diagnostic.boutonValiderDiagnostic.addEventListener(MouseEvent.CLICK, HValiderDiagnostic);
+			patientProperties.traitement.boutonValiderTherapie.addEventListener(MouseEvent.CLICK, HValiderTherapie);
+			patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.addEventListener(MouseEvent.CLICK, HValiderActionsTraitement);
 			patientProperties.contexte.visible				= false;
 			patientProperties.actionsVerification.visible	= false;
 			patientProperties.diagnostic.visible			= false;
@@ -73,7 +78,19 @@
 			// Civilité
 			
 			// Contexte
-
+			
+			// Diagnostic
+			
+			// Traitement
+			
+			// création des colonnes de dgListeSeancesTraitement
+			var dgListeSeancesTraitement:DataGrid = patientProperties.traitement.dgListeSeancesTraitement;
+			dgListeSeancesTraitement.columns = ["creneau","libelle_seance"];
+			dgListeSeancesTraitement.columns[0].width = 80; 
+			dgListeSeancesTraitement.columns[0].headerText = "Créneau";
+			dgListeSeancesTraitement.columns[1].headerText = "Libellé séance";
+			dgListeSeancesTraitement.addEventListener("change", HSelectionSeance);
+			
 			masqueElements();
 
 		}
@@ -130,8 +147,8 @@
 			}
 			else {
 				message += " ne contient pas toutes les actions requises," +
-				           " vous ne pouvez pas accéder au diagnostic.";
-				           " Il vous faut replanifier une première séance "
+				           " vous ne pouvez pas accéder au diagnostic." +
+				           " Il vous faut replanifier une première séance " +
 				           " pour tenter votre chance à nouveau.";				
 			}
 			afficherMessage(message);
@@ -145,10 +162,20 @@
 			}
 			else {
 				message += " est un diagnostic incorrect.";
-				// utiliser Map ci-dessous	
 				message += " Les diagnostics corrects étaient : " +
 				           listeDiagnosticsCorrects.map(Diagnostic.getMaladie).join(", ") +
-						   ".";				
+						   ".";		
+			}
+			afficherMessage(message);
+		}
+		
+		private function afficherMsgTherapie(statut:Boolean, civilite:String) {
+			message = "Votre choix de thérapie relative au patient " + civilite;
+			if (statut) {
+				message += " est bien une thérapie pertinente.";
+			}
+			else {
+				message += " n'est pas une thérapie pertinente.";
 			}
 			afficherMessage(message);
 		}
@@ -170,6 +197,39 @@
 		{
 			validerDiagnostic();
 		}
+
+		public function HValiderTherapie(e:MouseEvent):void
+		{
+			validerTherapie();
+		}
+
+		public function HValiderActionsTraitement(e:MouseEvent):void
+		{
+			validerActionsTraitement();
+		}
+		
+		/* ---------------------------------------------------------------- */
+
+		private function reglerOngletsActifs():void {
+			// on n'active les onglets contexte, diagnostic et traitement seulement
+			// si le patient correspond à un patient d'un cas du jeu en cours
+			if (selectedPatient.cas != null) {
+				textDebug2.appendText("\ndisplayProperties() : activation onglets médicaux du patient");
+				patientProperties.allTabs.contexte.alpha = 1;
+				patientProperties.allTabs.diagnostic.alpha = 1;
+				patientProperties.allTabs.traitement.alpha = 1;
+			}
+			else {
+				textDebug2.appendText("\ndisplayProperties() : désactivation onglets médicaux du patient");
+				patientProperties.allTabs.contexte.alpha = 0.5;
+				patientProperties.allTabs.diagnostic.alpha = 0.5;
+				patientProperties.allTabs.traitement.alpha = 0.5;
+			}
+		}
+			
+		/* ---------------------------------------------------------------- */
+		/*                         Onglet Civilité                          */
+		/* ---------------------------------------------------------------- */
 
 		public function saveCivilite():void
 		{
@@ -225,26 +285,16 @@
 			}
 		}
 
-		private function reglerOngletsActifs():void {
-			// on n'active les onglets contexte, diagnostic et traitement seulement
-			// si le patient correspond à un patient d'un cas du jeu en cours
-			if (selectedPatient.cas != null) {
-				textDebug2.appendText("\ndisplayProperties() : activation onglets médicaux du patient");
-				patientProperties.allTabs.contexte.alpha = 1;
-				patientProperties.allTabs.diagnostic.alpha = 1;
-				patientProperties.allTabs.traitement.alpha = 1;
-			}
-			else {
-				textDebug2.appendText("\ndisplayProperties() : désactivation onglets médicaux du patient");
-				patientProperties.allTabs.contexte.alpha = 0.5;
-				patientProperties.allTabs.diagnostic.alpha = 0.5;
-				patientProperties.allTabs.traitement.alpha = 0.5;
-			}
-		}
-			
-		public function saveListeActionsPremiereSeance():void
+		/* ---------------------------------------------------------------- */
+		/*                         Onglet Contexte                          */
+		/* ---------------------------------------------------------------- */
+
+		/* ---------------------------------------------------------------- */
+		/*                        Onglet Diagnostic                         */
+		/* ---------------------------------------------------------------- */
+
+		public function saveActionsPremiereSeance():void
 		{
-			var cas:Cas = selectedPatient.cas;
 			// saving actions de vérification
 			// listeChoixOrdonnes est du type listeChoixOrdonnes
 			//var	listeChoixOrdonnes:listeChoixOrdonnes fait dysfonctionner Flash CS5
@@ -252,7 +302,6 @@
 			var listeChoixActionsVerif:Array = listeChoixOrdonnes.getListeChoix();
 			textDebug2.appendText("\nsaving actions "+ listeChoixActionsVerif);
 			selectedPatient.listeActionsPremiereSeance = listeChoixActionsVerif;
-			
 		}
 
 		public function saveDiagnostic():void
@@ -265,7 +314,7 @@
 		public function validerActionsVerif():void
 		{
 			// on sauvegarde avant de vérifier
-			saveListeActionsPremiereSeance();
+			saveActionsPremiereSeance();
 			
 			// vérification proprement dite
 			var cas:Cas = selectedPatient.cas;
@@ -277,7 +326,6 @@
 				if (actionVerif.requise) {
 					if (listeChoixActionsVerif.indexOf(actionVerif.libelle) < 0) {
 						selectedPatient.accesDiagnostic = false;
-						afficherMsgListeActionsVerif(false, selectedPatient.getCivilite());
 						break;
 					}
 				}
@@ -290,7 +338,7 @@
 				var listeDiagnostics:Array = cas.listeDiagnostics;
 				selectedPatient.dpListDiagnostics = new DataProvider();
 				for each (var diagnostic:Diagnostic in listeDiagnostics) {
-					trace("diagnostic.maladie : " + diagnostic);
+					trace("diagnostic.maladie : " + diagnostic.maladie);
 					selectedPatient.dpListDiagnostics.addItem({label:diagnostic.maladie});
 				}
 				patientProperties.diagnostic.listDiagnostics.dataProvider = selectedPatient.dpListDiagnostics;
@@ -300,6 +348,8 @@
 				selectedPatient.invalideCreneauEnCours();
 			}
 
+			// mise à jour de la visibilité du bouton de validation des actions  
+			updateProperties();
 		}
 
 		public function validerDiagnostic():void
@@ -312,9 +362,10 @@
 			var listeDiagnostics:Array = cas.listeDiagnostics;
 			// on vérifie si le diagnostic choisi est bien un des diagnostics corrects
 			var listeDiagnosticsCorrects:Array = listeDiagnostics.filter(Diagnostic.estCorrect);
-			var diagnosticChoisi = listeDiagnostics[selectedPatient.indiceDiagnosticChoisi];
+			var diagnosticChoisi:Diagnostic = listeDiagnostics[selectedPatient.indiceDiagnosticChoisi];
 			afficherMsgDiagnostic(diagnosticChoisi.correct, selectedPatient.getCivilite(),
 			                      listeDiagnosticsCorrects);
+			selectedPatient.diagnosticChoisi = true;
 			if (diagnosticChoisi.correct) {
 				// TODO : attribuer des points au joueur
 			}
@@ -323,33 +374,93 @@
 			}
 			
 			// récupération des différentes thérapies proposées
-			
-			// récupération des actions de traitement des séances
-			// *** correspondant à la première thérapie pour le moment
-			// (si cela n'a pas encore été fait)
-			if (selectedPatient.listeActionsTraitementParSeance == null) {
-				var therapie:Therapie = cas.listeTherapies[0];
-				var listeSeances:Array/*Vector.<Seance>*/ = therapie.listeSeances;
-				var listActionsTraitement:Array;
-				selectedPatient.listeActionsTraitementParSeance			= new Array();
-				selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
-				for each (var seance:Seance in listeSeances) {
-					listActionsTraitement = new Array();
-					var listeActions:Array = seance.listeActions;
-					for each (var action:Action in listeActions) {
-						listActionsTraitement.push(action.libelle);
-					}
-					selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
-					selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
-				}
+			var listeTherapies:Array = cas.listeTherapies;
+			var therapie:Therapie;
+			selectedPatient.dpCBTherapies = new DataProvider();
+			for each (therapie in listeTherapies) {
+				trace("therapie.libelle : " + therapie.libelle);
+				selectedPatient.dpCBTherapies.addItem({label:therapie.libelle});
 			}
-				 
+
+			// mise à jour de la visibilité du bouton de choix du diagnostic  
+			updateProperties();
 		}
 		
-		public function saveTraitement():void
+		/* ---------------------------------------------------------------- */
+		/*                        Onglet Traitement                         */
+		/* ---------------------------------------------------------------- */
+
+		public function saveTherapie():void
 		{
+			var cbListeTherapies:ComboBox = patientProperties.traitement.cbListeTherapies;
+			selectedPatient.indiceTherapieChoisie = cbListeTherapies.selectedIndex;
 		}
 		
+		public function saveActionsTraitement():void
+		{
+			var	listeChoixOrdonnes:MovieClip = patientProperties.traitement.listeChoixOrdonnes;
+			var listeChoixActionsTraitement:Array = listeChoixOrdonnes.getListeChoix();
+			textDebug2.appendText("\nsaving actions "+ listeChoixActionsTraitement);
+			selectedPatient.setListeActionsTraitementChoisiesSeanceSelectionee(listeChoixActionsTraitement);
+		}
+		
+		public function validerTherapie():void
+		{
+			// on sauvegarde avant de vérifier
+			saveTherapie();
+
+			// vérification proprement dite
+			var cas:Cas = selectedPatient.cas;
+			var listeTherapies:Array = cas.listeTherapies;
+			var therapieChoisie:Therapie = listeTherapies[selectedPatient.indiceTherapieChoisie];
+			afficherMsgTherapie(therapieChoisie.pertinente, selectedPatient.getCivilite());
+			selectedPatient.accesTraitement = therapieChoisie.pertinente;
+			if (therapieChoisie.pertinente) {
+				// TODO : attribuer des points au joueur
+				
+				// récupération des actions de traitement des séances
+				// *** correspondant à la première thérapie pour le moment
+				// (si cela n'a pas encore été fait)
+				if (selectedPatient.listeActionsTraitementParSeance == null) {
+					var listeSeances:Array/*Vector.<Seance>*/ = therapieChoisie.listeSeances;
+					var listActionsTraitement:Array;
+					var dgListeSeancesTraitement:DataGrid = patientProperties.traitement.dgListeSeancesTraitement;
+					selectedPatient.listeActionsTraitementParSeance			= new Array();
+					selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
+					for each (var seance:Seance in listeSeances) {
+						// ajout du libellé de la séance au tableau des séances
+						dgListeSeancesTraitement.addItem({creneau:"---", libelle_seance:seance.libelle});
+						
+						// constitution de la liste des actions de traitement de cette séance
+						listActionsTraitement = new Array();
+						var listeActions:Array = seance.listeActions;
+						for each (var action:Action in listeActions) {
+							listActionsTraitement.push(action.libelle);
+						}
+						selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
+						selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
+					}
+				}
+					 
+			}
+			else {
+				// TODO : attribuer un malus au joueur
+			}
+			
+			// mise à jour de la visibilité du bouton de choix de thérapie 
+			updateProperties();
+		}
+		
+		public function validerActionsTraitement():void
+		{
+			// on sauvegarde avant de vérifier
+			saveActionsTraitement();
+		}
+
+		/* ---------------------------------------------------------------- */
+		/*          Bouton de sauvegarde commun à tous les onglets          */
+		/* ---------------------------------------------------------------- */
+
 		public function saveProperties():void
 		{
 			textDebug2.appendText("\nsaving patient n°"+selectedPatient.idPatient+", tab "+patientProperties.currentFrame);
@@ -363,13 +474,17 @@
 				case "contexte":
 					break;
 				case "diagnostic":
-					saveListeActionsPremiereSeance();
+					saveActionsPremiereSeance();
 					if (selectedPatient.accesDiagnostic) {
 						saveDiagnostic();
 					}
 					break;
 				case "traitement":
-					saveTraitement();
+					// sauvegarde de la thérapie si elle n'a pas encore été choisie
+					if (!selectedPatient.accesTraitement) {
+						saveTherapie();
+					}
+					saveActionsTraitement();
 					break;
 			}
 			
@@ -377,6 +492,25 @@
 			updateAgenda();
 		}
 
+		// onglet traitement : sélection d'une séance dans la liste des séances de la thérapie choisie
+		public function HSelectionSeance(e:Event):void {
+			var indiceSeance:int = DataGrid(e.target).selectedIndex;
+			selectionSeance(indiceSeance);
+		}
+		
+		// onglet traitement : sélection automatique d'une séance qui vient de démarrer
+		// dans la liste des séances de la thérapie choisie
+		public function selectionSeanceEnCours(indiceSeance:int):void {
+			var dgListeSeancesTraitement:DataGrid = patientProperties.traitement.dgListeSeancesTraitement;
+			dgListeSeancesTraitement.selectedIndex = indiceSeance;
+			selectionSeance(indiceSeance);
+		}
+		
+		public function selectionSeance(indiceSeance:int):void {
+			selectedPatient.indiceSeanceSelectionee = indiceSeance;
+			updateProperties();
+		}
+		
 		public function updateProperties():void
 		{
 			textDebug2.appendText("\nupdateProperties() : patient n°"+selectedPatient.idPatient+", tab "+selectedTab+", nom "+selectedPatient.nomPatient);
@@ -468,39 +602,71 @@
 				patientProperties.actionsVerification.listeChoixOrdonnes.setListeChoix(selectedPatient.listeActionsPremiereSeance);
 				
 				// accès au bouton de validation des actions de vérification si la première séance
-				// de traitement est bien en cours
+				// de vérification est bien en cours et qu'on n'a pas déjà effectué cette validation
 				var premiereSeanceEnCours:Boolean = selectedPatient.premiereSeanceEnCours();
+				var accesDiagnostic:Boolean = selectedPatient.accesDiagnostic;
 				patientProperties.actionsVerification.listeChoixOrdonnes.boutonValiderChoix.visible =
-					premiereSeanceEnCours;
+					premiereSeanceEnCours && !accesDiagnostic;
 				
 				// affichage du diagnostic si l'accès a déjà été donné
 				if (selectedPatient.accesDiagnostic) {
 					var listDiagnostics:List = patientProperties.diagnostic.listDiagnostics;
 					listDiagnostics.dataProvider = selectedPatient.dpListDiagnostics;
-					// sélection de l'éventuel diagnostic choisi par leu joueur
+					// sélection de l'éventuel diagnostic choisi par le joueur
 					if (selectedPatient.indiceDiagnosticChoisi >= 0) {
 						listDiagnostics.selectedIndex = selectedPatient.indiceDiagnosticChoisi;
-						// accès au bouton de validation du diagnostic si la première séance
-						// de traitement est bien en cours
-						patientProperties.diagnostic.boutonValiderDiagnostic.visible =
-							selectedPatient.premiereSeanceEnCours();
 					}
+					// accès au bouton de validation du diagnostic si la première séance
+					// de traitement est bien en cours et qu'il a n'a pas déjà été donné
+					patientProperties.diagnostic.boutonValiderDiagnostic.visible =
+						selectedPatient.premiereSeanceEnCours() &&
+						!selectedPatient.diagnosticChoisi;
+					
+					// affichage de la liste des thérapies ainsi que de l'éventuelle thérapie choisie
+					var cbListeTherapies:ComboBox = patientProperties.traitement.cbListeTherapies;
+					cbListeTherapies.dataProvider = selectedPatient.dpCBTherapies;
+					if (selectedPatient.indiceTherapieChoisie >= 0) {
+						cbListeTherapies.selectedIndex = selectedPatient.indiceTherapieChoisie;
+					}
+					// la sélection d'une thérapie dans la liste de celles proposées n'est possible
+					// que si une thérapie pertinente n'a pas encore été sélectionnée
+					cbListeTherapies.enabled = !selectedPatient.accesTraitement;
+
+					// accès au bouton de validation de la thérapie choisie à n'importe quel moment
+					// (meme si une séance de traitement n'est pas en cours), mais seulement
+					// si on n'a pas déjà effectué cette validation
+					var seanceTraitementEnCours:Boolean = selectedPatient.seanceTraitementEnCours();
+					var accesTraitement:Boolean = selectedPatient.accesTraitement;
+					patientProperties.traitement.boutonValiderTherapie.visible = !accesTraitement;
+
+					// Sélection des actions de traitement de l'éventuelle séance (de traitement) en cours,
+					// ou d'un séance sélectionnée par le joueur
+					if (selectedPatient.seanceTraitementSelectionnee()) {
+						var listActionsTraitement:Array =
+							selectedPatient.getListeActionsTraitementSeanceSelectionee();
+						var listActionsTraitementChoisies:Array =
+							selectedPatient.getListeActionsTraitementChoisiesSeanceSelectionee();
+						patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles(listActionsTraitement);
+						patientProperties.actionsVerification.listeChoixOrdonnes.setListeChoix(listActionsTraitementChoisies);
+					}
+					else {
+						patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles([]);
+					}
+					// accès au bouton de validation des actions de traitement si :
+					// - une séance de traitement est bien en cours
+					// - c'est bien cette séance qui est sélectionnée dans la liste des séances
+					// - on n'a pas déjà effectué cette validation
+					patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
+						seanceTraitementEnCours &&
+						(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
+						!/*TODO*/false;
 				}
+
 			}
 			else {
 				patientProperties.actionsVerification.listeChoixOrdonnes.setListeChoixPossibles([]);
 			}
 
-			// Sélection des actions de traitement de l'éventuelle séance (de traitement) en cours
-			if (selectedPatient.seanceTraitementEnCours()) {
-				var listActionsTraitement:Array	= selectedPatient.getListeActionsTraitementSeanceEnCours();
-				var listActionsTraitementChoisies:Array = selectedPatient.getListeActionsTraitementChoisiesSeanceEnCours();
-				patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles(listActionsTraitement);
-				patientProperties.actionsVerification.listeChoixOrdonnes.setListeChoix(listActionsTraitementChoisies);
-			}
-			else {
-				patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles([]);
-			}
 		}
 
 		public function functionTabProperties(e:MouseEvent):void
