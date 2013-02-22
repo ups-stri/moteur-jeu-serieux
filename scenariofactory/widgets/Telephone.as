@@ -115,5 +115,34 @@
 		{
 			return dureeSonnerie;
 		}
+		
+		// definir la hauteur du telephone sur ses composants
+		override public function setHeight(liste:Array)
+		{  
+		
+			// rapport hauteur - largeur 
+			var rapport:Number = this.height / this.width;
+			this.height = Number(liste[1]);
+			
+			var list:Array = new Array();
+			list[1] = this.height / rapport;
+			//on repositionne le telephone
+			super.setWidth(list);
+	
+		}
+		
+		// definir la largeur du telephone sur ses composants
+		override public function setWidth(liste:Array)
+		{
+			// rapport hauteur-largeur 
+			var rapport:Number = this.height/this.width;
+			this.width = Number(liste[1]);
+			
+			var list:Array = new Array();
+			list[1] = this.width * rapport;
+			// on repositionne le telephone
+			super.setHeight(list);
+		
+		}
 	}
 }
