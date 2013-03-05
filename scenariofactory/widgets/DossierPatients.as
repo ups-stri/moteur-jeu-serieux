@@ -123,7 +123,7 @@
 		/* ---------------------------------------------------------------- */
 
 		private function afficherMessage(message:String) {
-			Scenario.getInstance().messageGeneral.afficherMessage(message);
+			Scenario.getInstance().messageGeneral._afficherMessage(message);
 		}
 
 		// statut indique si la création est ok		

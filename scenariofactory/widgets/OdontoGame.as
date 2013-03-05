@@ -361,7 +361,7 @@
 		{
 			trace("   Message téléphonique (événement : "+this.evenementEnCours.libelle+")");
 			Scenario.getInstance().messageGeneral.rendreVisible();
-			Scenario.getInstance().messageGeneral.afficherMessage(this.evenementEnCours.listeMessages[0].message_);
+			Scenario.getInstance().messageGeneral._afficherMessage(this.evenementEnCours.listeMessages[0].message_);
 			// cet événement est joué
 			this.evenementEnCours.dejaJoue = true;
 		}

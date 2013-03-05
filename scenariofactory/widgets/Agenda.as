@@ -154,7 +154,7 @@
 						  creneau.toString());
 					message = "Le patient " + civilitePatient + " vient d'arriver au cabinet pour sa séance n° " +
 					          (indiceCreneau + 1);
-					Scenario.getInstance().messageGeneral.afficherMessage(message);
+					Scenario.getInstance().messageGeneral._afficherMessage(message);
 				}
 				// 2.b) les créneaux en cours qui viennent de se terminer
 				if (creneau.etat == Creneau.EN_COURS && (compareDates(date, dateFinCreneau(creneau)) > 0)) {
@@ -164,7 +164,7 @@
 					trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"passé\" : " +
 						  creneau.toString());
 					message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée";
-					Scenario.getInstance().messageGeneral.afficherMessage(message);
+					Scenario.getInstance().messageGeneral._afficherMessage(message);
 				}
 			}
 		}
