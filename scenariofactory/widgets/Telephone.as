@@ -133,7 +133,7 @@
 		override public function setWidth(liste:Array)
 		{
 			// rapport hauteur-largeur 
-			var rapport:Number = this.height/this.width;
+			var rapport:Number = this.height / this.width;
 			super.setWidth(liste);
 			
 			var list:Array = new Array();

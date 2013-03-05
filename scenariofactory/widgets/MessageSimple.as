@@ -18,10 +18,16 @@
 			texteMessage.text = "";
 		}
 
-		public function afficherMessage(texte:String)
+		public function _afficherMessage(texte:String)
 		{
 			trace("   message : "+texte);
-			texteMessage.text = texteMessage.text+texte+"\n";
+			texteMessage.text = texteMessage.text + texte + "\n";
+		}
+		
+
+		public function afficherMessage(liste:Array)
+		{
+			_afficherMessage(liste[1]);
 		}
 		
 		//definir la hauteur du textarea

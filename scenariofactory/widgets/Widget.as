@@ -52,7 +52,7 @@
 		}
 		public function bringToFront(e:MouseEvent):void{
 			if(this.frontable) {
-				Scenario.getInstance()._bringToFront(e);
+				//Scenario.getInstance()._bringToFront(e);
 			}
         }
 		
