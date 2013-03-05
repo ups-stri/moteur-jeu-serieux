@@ -25,7 +25,7 @@
 
 		// dictionnaire des choix par leur nom
 		// listeChoixParLibelle["libellé d'un choix"] = listeChoixOrdonnes[indice de ce choix]
-		static private var listeChoixParLibelle:Array = new Array();		
+		private var listeChoixParLibelle:Array;		
 		
 		public function ListeChoixOrdonnes() {
 			// constructor code
@@ -100,6 +100,7 @@
 			var i:int;
 			
 			// suppression de l'existant
+			listeChoixParLibelle = new Array();
 			for each (var choix:ChoixOrdonne in listeChoixOrdonnes) {
 				removeChild(choix);
 			}

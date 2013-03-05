@@ -622,44 +622,47 @@
 						selectedPatient.premiereSeanceEnCours() &&
 						!selectedPatient.diagnosticChoisi;
 					
-					// affichage de la liste des thérapies ainsi que de l'éventuelle thérapie choisie
-					var cbListeTherapies:ComboBox = patientProperties.traitement.cbListeTherapies;
-					cbListeTherapies.dataProvider = selectedPatient.dpCBTherapies;
-					if (selectedPatient.indiceTherapieChoisie >= 0) {
-						cbListeTherapies.selectedIndex = selectedPatient.indiceTherapieChoisie;
+					// accès à la partie traitement si le diagnostic a été choisi
+					if (selectedPatient.diagnosticChoisi) {
+						// affichage de la liste des thérapies ainsi que de l'éventuelle thérapie choisie
+						var cbListeTherapies:ComboBox = patientProperties.traitement.cbListeTherapies;
+						cbListeTherapies.dataProvider = selectedPatient.dpCBTherapies;
+						if (selectedPatient.indiceTherapieChoisie >= 0) {
+							cbListeTherapies.selectedIndex = selectedPatient.indiceTherapieChoisie;
+						}
+						// la sélection d'une thérapie dans la liste de celles proposées n'est possible
+						// que si une thérapie pertinente n'a pas encore été sélectionnée
+						cbListeTherapies.enabled = !selectedPatient.accesTraitement;
+					
+						// accès au bouton de validation de la thérapie choisie à n'importe quel moment
+						// (meme si une séance de traitement n'est pas en cours), mais seulement
+						// si on n'a pas déjà effectué cette validation
+						var seanceTraitementEnCours:Boolean = selectedPatient.seanceTraitementEnCours();
+						var accesTraitement:Boolean = selectedPatient.accesTraitement;
+						patientProperties.traitement.boutonValiderTherapie.visible = !accesTraitement;
+	
+						// Sélection des actions de traitement de l'éventuelle séance (de traitement) en cours,
+						// ou d'un séance sélectionnée par le joueur
+						if (selectedPatient.seanceTraitementSelectionnee()) {
+							var listActionsTraitement:Array =
+								selectedPatient.getListeActionsTraitementSeanceSelectionee();
+							var listActionsTraitementChoisies:Array =
+								selectedPatient.getListeActionsTraitementChoisiesSeanceSelectionee();
+							patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles(listActionsTraitement);
+							patientProperties.traitement.listeChoixOrdonnes.setListeChoix(listActionsTraitementChoisies);
+						}
+						else {
+							patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles([]);
+						}
+						// accès au bouton de validation des actions de traitement si :
+						// - une séance de traitement est bien en cours
+						// - c'est bien cette séance qui est sélectionnée dans la liste des séances
+						// - on n'a pas déjà effectué cette validation
+						patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
+							seanceTraitementEnCours &&
+							(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
+							!/*TODO*/false;
 					}
-					// la sélection d'une thérapie dans la liste de celles proposées n'est possible
-					// que si une thérapie pertinente n'a pas encore été sélectionnée
-					cbListeTherapies.enabled = !selectedPatient.accesTraitement;
-
-					// accès au bouton de validation de la thérapie choisie à n'importe quel moment
-					// (meme si une séance de traitement n'est pas en cours), mais seulement
-					// si on n'a pas déjà effectué cette validation
-					var seanceTraitementEnCours:Boolean = selectedPatient.seanceTraitementEnCours();
-					var accesTraitement:Boolean = selectedPatient.accesTraitement;
-					patientProperties.traitement.boutonValiderTherapie.visible = !accesTraitement;
-
-					// Sélection des actions de traitement de l'éventuelle séance (de traitement) en cours,
-					// ou d'un séance sélectionnée par le joueur
-					if (selectedPatient.seanceTraitementSelectionnee()) {
-						var listActionsTraitement:Array =
-							selectedPatient.getListeActionsTraitementSeanceSelectionee();
-						var listActionsTraitementChoisies:Array =
-							selectedPatient.getListeActionsTraitementChoisiesSeanceSelectionee();
-						patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles(listActionsTraitement);
-						patientProperties.actionsVerification.listeChoixOrdonnes.setListeChoix(listActionsTraitementChoisies);
-					}
-					else {
-						patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles([]);
-					}
-					// accès au bouton de validation des actions de traitement si :
-					// - une séance de traitement est bien en cours
-					// - c'est bien cette séance qui est sélectionnée dans la liste des séances
-					// - on n'a pas déjà effectué cette validation
-					patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
-						seanceTraitementEnCours &&
-						(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
-						!/*TODO*/false;
 				}
 
 			}
