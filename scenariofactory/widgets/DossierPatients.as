@@ -97,6 +97,7 @@
 		public function masqueElements():void
 		{
 			textDebug2.appendText("\nmasqueElements");
+			isOpen = true;
 			boutonAjoutPatient.visible = false;
 			patientProperties.visible = false;
 			lignes.visible = false;
@@ -107,6 +108,7 @@
 		public function demasqueElements():void
 		{
 			textDebug2.appendText("\ndemasqueElements");
+			isOpen = false;
 			boutonAjoutPatient.visible = true;
 			lignes.visible = true;
 			fond.visible = true;
@@ -150,6 +152,20 @@
 				           " vous ne pouvez pas accéder au diagnostic." +
 				           " Il vous faut replanifier une première séance " +
 				           " pour tenter votre chance à nouveau.";				
+			}
+			afficherMessage(message);
+		}
+		
+		private function afficherMsgListeActionsTraitement(statut:Boolean, civilite:String) {
+			message = "Votre liste d'actions de traitement du patient " + civilite +
+			          " pour la séance en cours";
+			if (statut) {
+				message += " contient bien toutes les actions requises.";
+			}
+			else {
+				message += " ne contient pas toutes les actions requises." +
+				           " Il vous faut replanifier une nouvelle séance " +
+						   " du même type pour tenter votre chance à nouveau.";				
 			}
 			afficherMessage(message);
 		}
@@ -434,11 +450,17 @@
 						// constitution de la liste des actions de traitement de cette séance
 						listActionsTraitement = new Array();
 						var listeActions:Array = seance.listeActions;
+						var nbActions:int = listeActions.length;
 						for each (var action:Action in listeActions) {
 							listActionsTraitement.push(action.libelle);
 						}
 						selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
 						selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
+						selectedPatient.listeStatutsActionsChoisiesParSeance = new Vector.<Boolean>(nbActions);
+						for each (var statut:Boolean in selectedPatient.listeStatutsActionsChoisiesParSeance) {
+							statut = false;
+						}
+						
 					}
 				}
 					 
@@ -455,6 +477,44 @@
 		{
 			// on sauvegarde avant de vérifier
 			saveActionsTraitement();
+			
+			// vérification proprement dite
+			var cas:Cas = selectedPatient.cas;
+			var therapie:Therapie = cas.listeTherapies[selectedPatient.indiceTherapieChoisie];
+			var seanceTraitement:Seance = therapie.listeSeances[selectedPatient.indiceSeanceSelectionee];
+			// liste des actions proposées, certaines étant requises et/ou pertinentes
+			var listActionsSeance:Array = seanceTraitement.listeActions;
+
+			var listActionsTraitementChoisies:Array =
+				selectedPatient.getListeActionsTraitementChoisiesSeanceSelectionee();
+
+			// on vérifie si les actions requises de traitement ont bien été sélectionnées,
+			// si oui, TODO
+			var traitementSeanceOk = true;
+			for each (var action:Action in listActionsSeance) {
+				if (action.requise) {
+					if (listActionsTraitementChoisies.indexOf(action.libelle) < 0) {
+						traitementSeanceOk = false;
+						break;
+					}
+				}
+			}
+			afficherMsgListeActionsTraitement(traitementSeanceOk, selectedPatient.getCivilite());
+			
+			if (traitementSeanceOk) {
+				// TODO rien à faire pour le moment
+			}
+			else {
+				// la séance est invalidée, le joueur va devoir planifier une nouvelle séance
+				selectedPatient.invalideCreneauEnCours();
+			}
+
+			// mémorisation du statut des actions choisies pour la séance sélectionnée
+			selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee] =
+				traitementSeanceOk;
+				
+			// mise à jour de la visibilité du bouton de validation des actions  
+			updateProperties();
 		}
 
 		/* ---------------------------------------------------------------- */
@@ -661,7 +721,7 @@
 						patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
 							seanceTraitementEnCours &&
 							(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
-							!/*TODO*/false;
+							!selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee];
 					}
 				}
 
@@ -769,14 +829,11 @@
 			// openOrClose
 			if (isOpen)
 			{
-				isOpen = false;
-				this.gotoAndStop(5);
 				demasqueElements();
+				Scenario.getInstance().agenda.masqueElements();
 			}
 			else
 			{
-				isOpen = true;
-				this.gotoAndStop(1);
 				masqueElements();
 			}
 		}

@@ -49,6 +49,7 @@
 		public var listeActionsTraitementParSeance:Array;
 		// liste des actions choisies par le joueur pour chaque séance de traitement
 		public var listeActionsTraitementChoisiesParSeance:Array;
+		public var listeStatutsActionsChoisiesParSeance:Vector.<Boolean>;
 
 		public var dpListDiagnostics:DataProvider;
 		public var indiceDiagnosticChoisi:int = -1;

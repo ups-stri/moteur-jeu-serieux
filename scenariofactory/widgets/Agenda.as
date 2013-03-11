@@ -200,20 +200,18 @@
 			if (isOpen)
 			{
 				Scenario.getInstance().dossierPatients.textDebug2.text = "";
-				isOpen = false;
-				this.gotoAndStop(5);
 				demasqueElements();
+				Scenario.getInstance().dossierPatients.masqueElements();
 			}
 			else
 			{
 				textDebug.text = "";
-				isOpen = true;
-				this.gotoAndStop(1);
 				masqueElements();
 			}
 		}
 		public function masqueElements():void
 		{
+			isOpen = true;
 			fond.visible = false;
 			boutonAjoutCreneau.visible = false;
 			radioButtonsDuration.visible = false;
@@ -224,6 +222,7 @@
 		}
 		public function demasqueElements():void
 		{
+			isOpen = false;
 			fond.visible = true;
 			boutonAjoutCreneau.visible = true;
 			radioButtonsDuration.visible = true;
