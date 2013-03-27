@@ -13,7 +13,9 @@
 		// déclaration manuelle des occurrences de symboles placées dans le clip
 		public var boutonValiderChoix:MovieClip;
 
-
+		// la liste est-elle active (peut-on changer les choix) ?
+		private var active:Boolean = true;
+		
 		// hauteur en pixels de chaque choix
 		static private var HAUTEUR_CHOIX = 25;
 		
@@ -29,6 +31,19 @@
 		
 		public function ListeChoixOrdonnes() {
 			// constructor code
+		}
+		
+		// action ou désactivation de la liste de choix :
+		// - boutons permettant de monter ou descendre un choix
+		// - cases à cocher des choix
+		public function setEnabled(active:Boolean) {
+			this.active = active;
+			for each (var choix:ChoixOrdonne in listeChoixOrdonnes) {
+				choix.cbChoix.enabled = active;
+				if (!active) {
+					choix.monter.visible = choix.descendre.visible = false;
+				}
+			}
 		}
 		
 		private function getChoixLibelle(choix:ChoixOrdonne):String {
@@ -116,7 +131,6 @@
 			if (nbChoixOrdonnes > 0) {
 				listeChoixOrdonnes[0].monter.visible 						= false;
 				listeChoixOrdonnes[nbChoixOrdonnes - 1].descendre.visible	= false;
-				
 			}
 			
 			// positionnement du bouton "Valider" et association de la fonction d'écoute

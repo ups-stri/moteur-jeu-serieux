@@ -443,6 +443,7 @@
 					var dgListeSeancesTraitement:DataGrid = patientProperties.traitement.dgListeSeancesTraitement;
 					selectedPatient.listeActionsTraitementParSeance			= new Array();
 					selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
+					selectedPatient.listeStatutsActionsChoisiesParSeance = new Vector.<Boolean>();
 					for each (var seance:Seance in listeSeances) {
 						// ajout du libellé de la séance au tableau des séances
 						dgListeSeancesTraitement.addItem({creneau:"---", libelle_seance:seance.libelle});
@@ -450,17 +451,12 @@
 						// constitution de la liste des actions de traitement de cette séance
 						listActionsTraitement = new Array();
 						var listeActions:Array = seance.listeActions;
-						var nbActions:int = listeActions.length;
 						for each (var action:Action in listeActions) {
 							listActionsTraitement.push(action.libelle);
 						}
 						selectedPatient.listeActionsTraitementParSeance.push(listActionsTraitement);
 						selectedPatient.listeActionsTraitementChoisiesParSeance.push(new Array());
-						selectedPatient.listeStatutsActionsChoisiesParSeance = new Vector.<Boolean>(nbActions);
-						for each (var statut:Boolean in selectedPatient.listeStatutsActionsChoisiesParSeance) {
-							statut = false;
-						}
-						
+						selectedPatient.listeStatutsActionsChoisiesParSeance.push(false);
 					}
 				}
 					 
@@ -667,6 +663,8 @@
 				var accesDiagnostic:Boolean = selectedPatient.accesDiagnostic;
 				patientProperties.actionsVerification.listeChoixOrdonnes.boutonValiderChoix.visible =
 					premiereSeanceEnCours && !accesDiagnostic;
+				// désactivation des choix des actions de vérification si déjà validé correctement
+				patientProperties.actionsVerification.listeChoixOrdonnes.setEnabled(!accesDiagnostic);
 				
 				// affichage du diagnostic si l'accès a déjà été donné
 				if (selectedPatient.accesDiagnostic) {
@@ -681,6 +679,8 @@
 					patientProperties.diagnostic.boutonValiderDiagnostic.visible =
 						selectedPatient.premiereSeanceEnCours() &&
 						!selectedPatient.diagnosticChoisi;
+					// désactivation du choix d'un diagnostic s'il a déjà été effectué
+					listDiagnostics.enabled = !selectedPatient.diagnosticChoisi; 
 					
 					// accès à la partie traitement si le diagnostic a été choisi
 					if (selectedPatient.diagnosticChoisi) {
@@ -690,9 +690,6 @@
 						if (selectedPatient.indiceTherapieChoisie >= 0) {
 							cbListeTherapies.selectedIndex = selectedPatient.indiceTherapieChoisie;
 						}
-						// la sélection d'une thérapie dans la liste de celles proposées n'est possible
-						// que si une thérapie pertinente n'a pas encore été sélectionnée
-						cbListeTherapies.enabled = !selectedPatient.accesTraitement;
 					
 						// accès au bouton de validation de la thérapie choisie à n'importe quel moment
 						// (meme si une séance de traitement n'est pas en cours), mais seulement
@@ -700,6 +697,9 @@
 						var seanceTraitementEnCours:Boolean = selectedPatient.seanceTraitementEnCours();
 						var accesTraitement:Boolean = selectedPatient.accesTraitement;
 						patientProperties.traitement.boutonValiderTherapie.visible = !accesTraitement;
+						// la sélection d'une thérapie dans la liste de celles proposées n'est possible
+						// que si une thérapie pertinente n'a pas encore été sélectionnée
+						cbListeTherapies.enabled = !accesTraitement;
 	
 						// Sélection des actions de traitement de l'éventuelle séance (de traitement) en cours,
 						// ou d'un séance sélectionnée par le joueur
@@ -718,10 +718,14 @@
 						// - une séance de traitement est bien en cours
 						// - c'est bien cette séance qui est sélectionnée dans la liste des séances
 						// - on n'a pas déjà effectué cette validation
+						var statutActionsTraitementChoisies:Boolean =
+							selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee];
 						patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
 							seanceTraitementEnCours &&
 							(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
-							!selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee];
+							!statutActionsTraitementChoisies;
+						// désactivation des choix des actions de traitement si déjà validé correctement
+						patientProperties.traitement.listeChoixOrdonnes.setEnabled(!statutActionsTraitementChoisies);
 					}
 				}
 
