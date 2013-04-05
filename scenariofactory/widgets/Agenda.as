@@ -1,9 +1,6 @@
 ﻿package scenariofactory.widgets
 {
 	import fl.controls.ComboBox;
-
-	import scenariofactory.Scenario;
-
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
@@ -14,6 +11,9 @@
 	// classes Timer
 
 	// classes du modèle (Scenario pour la variable d'instance, DossierPatients pour listPatients)
+	import scenariofactory.Scenario;
+	import scenariofactory.widgets.DossierPatients;
+	import scenariofactory.widgets.PatientAgenda;
 
 	public class Agenda extends Widget
 	{
@@ -134,6 +134,7 @@
 			var civilitePatient:String;	// civilité de ce patient
 			var indiceCreneau:int;		// indice du créneau concerné dans la liste des créneaux de ce patient
 			var message:String;			// message affiché au joueur concernant ce patient
+			var dossierPatients:DossierPatients = Scenario.getInstance().dossierPatients;
 			
 			// 1) recueil de tous les créneaux des patients qui ne sont encore passés
 			for each (patient in PatientAgenda.listePatients) {
@@ -159,12 +160,37 @@
 				// 2.b) les créneaux en cours qui viennent de se terminer
 				if (creneau.etat == Creneau.EN_COURS && (compareDates(date, dateFinCreneau(creneau)) > 0)) {
 					patient = PatientAgenda.getPatientParId(creneau.idPatient);
-					indiceCreneau/* not used*/ = patient.setCreneauPasse(creneau);
 					civilitePatient = patient.getCivilite();
-					trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"passé\" : " +
-						  creneau.toString());
-					message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée";
-					Scenario.getInstance().messageGeneral._afficherMessage(message);
+					
+					// on regarde si le joueur n'a pas eu le temps de proposer ses
+					// actions de vérification ou son diagnostic pour la première séance,
+					// ou ses actions de traitement pour une séance de traitement,
+					// auquel cas il faudra invalider le créneau en question
+					var creneauAInvalider = false;
+					if (patient.premiereSeanceEnCours() &&
+					    (!patient.accesDiagnostic || !patient.diagnosticChoisi)) {
+						creneauAInvalider = true;
+						dossierPatients.afficherMsgSeanceActionsVerifEchue(civilitePatient);
+					}
+					else if (patient.seanceTraitementEnCours() &&
+					         !patient.listeStatutsActionsChoisiesParSeance[patient.indiceCreneauEnCours - 1]) {
+						creneauAInvalider = true;
+						dossierPatients.afficherMsgSeanceActionsTraitementEchue(civilitePatient);
+					}
+					
+					if (creneauAInvalider) {
+						// le créneau doit être invalidé
+						patient.invalideCreneauEnCours();
+					}
+					else {
+						// le créneau passe simplement dans le passé
+						indiceCreneau/* not used*/ = patient.setCreneauPasse(creneau);
+						trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"passé\" : " +
+							  creneau.toString());
+						message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée";
+						Scenario.getInstance().messageGeneral._afficherMessage(message);
+					}
+					
 				}
 			}
 		}

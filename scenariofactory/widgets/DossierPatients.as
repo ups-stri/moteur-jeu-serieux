@@ -156,6 +156,16 @@
 			afficherMessage(message);
 		}
 		
+		public function afficherMsgSeanceActionsVerifEchue(civilite:String) {
+			message = "Vous n'êtes pas parvenu à indiquer une liste d'actions " +
+			          "de vérification ou à vous décider pour un diagnostic " +
+					  "pour le patient " + civilite + " " +
+					  "durant le temps qui était imparti pour cette séance.\n" +
+			          "Il vous faut replanifier une première séance " +
+			          "pour tenter votre chance à nouveau.";				
+			afficherMessage(message);
+		}
+		
 		private function afficherMsgListeActionsTraitement(statut:Boolean, civilite:String) {
 			message = "Votre liste d'actions de traitement du patient " + civilite +
 			          " pour la séance en cours";
@@ -167,6 +177,15 @@
 				           " Il vous faut replanifier une nouvelle séance " +
 						   " du même type pour tenter votre chance à nouveau.";				
 			}
+			afficherMessage(message);
+		}
+		
+		public function afficherMsgSeanceActionsTraitementEchue(civilite:String) {
+			message = "Vous n'êtes pas parvenu à indiquer une liste d'actions " +
+			          "de traitement du patient " + civilite + " " +
+					  "durant le temps qui était imparti pour cette séance.\n" +
+			          "Il vous faut replanifier une nouvelle séance " +
+			          "du même type pour tenter votre chance à nouveau.";				
 			afficherMessage(message);
 		}
 		
@@ -275,6 +294,8 @@
 			if (patient != null) {
 				// on ne récupère les infos du cas que si on ne l'a pas déjà fait
 				if (selectedPatient.cas == null) {
+					// rétablissement éventuel de la bonne casse du nom du patient
+					selectedPatient.nomPatient = selectedPatient.textPatient.text = patient.getNom();
 					afficherMsgCreationPatientAttendu(true, selectedPatient.getCivilite());
 					var cas:Cas = patient.getCas();
 					selectedPatient.cas = cas; // mémorisation du cas dont relève ce patient
@@ -294,6 +315,7 @@
 					}
 					
 					reglerOngletsActifs();
+					updateProperties();
 				}
 			}
 			else {
