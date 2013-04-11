@@ -104,8 +104,8 @@
 			GlobalVarContainer.vars.nbChargementsEnCours--;
 
 			// temporaire
-			Scenario.getInstance().messageGeneral.texteMessage.width = 225;
-			Scenario.getInstance().messageGeneral.texteMessage.height = 400;
+			Scenario.getInstance().messageGeneral.texteMessage.width = 345;
+			Scenario.getInstance().messageGeneral.texteMessage.height = 560;
 		}
 		private function codeHTTP(pEvt:HTTPStatusEvent):void
 		{
@@ -361,7 +361,7 @@
 		{
 			trace("   Message téléphonique (événement : "+this.evenementEnCours.libelle+")");
 			Scenario.getInstance().messageGeneral.rendreVisible();
-			Scenario.getInstance().messageGeneral._afficherMessage(this.evenementEnCours.listeMessages[0].message_);
+			Scenario.getInstance().messageGeneral._afficherMessage(this.evenementEnCours.listeMessages[0].message_ + "\n");
 			// cet événement est joué
 			this.evenementEnCours.dejaJoue = true;
 		}

@@ -47,6 +47,7 @@
 		// liste des actions de traitement pour chacune des séances de traitement prévues
 		// chaque élément est un tableau des actions prévues pour la séance en question
 		public var listeActionsTraitementParSeance:Array;
+		public var nbSeancesTraitement:int;	// nombre de ces séances 
 		// liste des actions choisies par le joueur pour chaque séance de traitement
 		public var listeActionsTraitementChoisiesParSeance:Array;
 		public var listeStatutsActionsChoisiesParSeance:Vector.<Boolean>;
@@ -132,7 +133,8 @@
 		}
 		
 		public function seanceTraitementEnCours():Boolean {
-			return unCreneauEnCours && (indiceCreneauEnCours > 0);
+			return accesTraitement && unCreneauEnCours &&
+			       (indiceCreneauEnCours > 0) && (indiceCreneauEnCours <= nbSeancesTraitement);
 		}
 		
 		public function getListeActionsTraitementSeanceEnCours():Array {
@@ -178,14 +180,23 @@
 			creneauEnCours = creneau;
 			unCreneauEnCours = true;
 			indiceCreneauEnCours++;
-			if (seanceTraitementEnCours()) {
+			if (premiereSeanceEnCours()) {
+				// mise à jour éventuelle de l'accès aux boutons de validation d'actions
+				dossierPatients.updateProperties();
+			}
+			else if (seanceTraitementEnCours()) {
 				// s'il s'agit d'un créneau d'une séance de traitement, sélectionner
 				// la séance en question dans le tableau de la liste des séances
 				dossierPatients.selectionSeanceEnCours(indiceCreneauEnCours - 1);
 			}
 			else {
-				// mise à jour éventuelle de l'accès aux boutons de validation d'actions
-				dossierPatients.updateProperties();
+				// la séance ne correspond à rien ; 2 possibilités :
+				// - il s'agirait de la première action de traitement, mais
+				//   le joueur n'a pas encore choisi de thérapie pertinente
+				// - toutes les séances de la thérapie choisie ont été effectuées,
+				//   cette séance surnuméraire ne sert donc à rien
+				// dans tous les cas, on invalide cette séance
+				invalideCreneauEnCours();
 			}
 			return indiceCreneauEnCours;
 		}

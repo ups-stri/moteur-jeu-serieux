@@ -149,13 +149,30 @@
 				// 2.a) les créneaux qui viennent de démarrer
 				if (creneau.etat == Creneau.FUTUR && (creneau.compareDateACreneau(date) >= 0)) {
 					patient = PatientAgenda.getPatientParId(creneau.idPatient);
-					indiceCreneau = patient.setCreneauEnCours(creneau);
 					civilitePatient = patient.getCivilite();
-					trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"en cours\" : " +
-						  creneau.toString());
-					message = "Le patient " + civilitePatient + " vient d'arriver au cabinet pour sa séance n° " +
-					          (indiceCreneau + 1);
-					Scenario.getInstance().messageGeneral._afficherMessage(message);
+					indiceCreneau = patient.setCreneauEnCours(creneau);
+					// il faut vérifier que le créneau correspond bien à quelque chose
+					// cf. PatientAgenda.setCreneauEnCours > commentaires
+					if (creneau.etat != Creneau.INVALIDE) {
+						trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"en cours\" : " +
+							  creneau.toString());
+						message = "Le patient " + civilitePatient + " vient d'arriver au cabinet pour sa séance n° " +
+						          (indiceCreneau + 1) + "\n";
+						Scenario.getInstance().messageGeneral._afficherMessage(message);
+					}
+					else {
+						message = "Le patient " + civilitePatient + " a un créneau dans l'agenda qui vient de démarrer, " +
+						          "mais ce créneau ne peut être utilisé, car ";
+					 	if (!patient.accesTraitement) {
+							message += "il s'agit d'un créneau destiné a priori à une séance de traitement, " +
+								       "mais aucune thérapie pertinente n'a encore été choisie.";
+						}
+						else {
+							message += "il s'agit d'un créneau surnuméraire par rapport aux nombre de séances " +
+								  	   "nécessaires à la thérapie choisie.";
+						}
+						Scenario.getInstance().messageGeneral._afficherMessage(message + "\n");
+					}
 				}
 				// 2.b) les créneaux en cours qui viennent de se terminer
 				if (creneau.etat == Creneau.EN_COURS && (compareDates(date, dateFinCreneau(creneau)) > 0)) {
@@ -187,7 +204,7 @@
 						indiceCreneau/* not used*/ = patient.setCreneauPasse(creneau);
 						trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"passé\" : " +
 							  creneau.toString());
-						message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée";
+						message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée\n";
 						Scenario.getInstance().messageGeneral._afficherMessage(message);
 					}
 					

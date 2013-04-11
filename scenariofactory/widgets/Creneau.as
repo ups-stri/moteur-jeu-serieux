@@ -17,8 +17,13 @@ package scenariofactory.widgets {
 		public static const PASSE:int		= 0;
 		public static const EN_COURS:int	= 1;
 		public static const FUTUR:int		= 2;
+		// n° d'images respectives du clip Flash représentant ce créneau
+		public static const IMAGE_FUTUR:int =    1; 
+		public static const IMAGE_PASSE:int =    2; 
+		public static const IMAGE_EN_COURS:int = 3; 
+		public static const IMAGE_INVALIDE:int = 4; 
 		// état actuel		
-		public var etat:int;
+		private var _etat:int;
 		
 		// date de début du créneau
 		public var date:Date;
@@ -28,7 +33,7 @@ package scenariofactory.widgets {
 		
 		public var idPatient:int;	// pour lequel ce créneau a été pris
 		
-		function Creneau(){
+		function Creneau() {
 		
 		}
 
@@ -52,6 +57,36 @@ package scenariofactory.widgets {
 		}
 		public static function estFutur(creneau:Creneau, indiceCrenau:int = -1, listeCreneaux:Vector.<Creneau> = null):Boolean {
 			return (creneau.etat == FUTUR);
+		}
+		
+		public function get etat():int {
+			return _etat;	
+		}
+		
+		// fonction indiquant le nouvel état du créneau
+		public function set etat(etatNew:int) {
+			_etat = etatNew;
+			var imageEtat:int;
+			switch (etatNew) {
+				case FUTUR:
+					imageEtat = IMAGE_FUTUR;
+					this.alpha = 0.8;
+					break;
+				case PASSE:
+					imageEtat = IMAGE_PASSE;
+					this.alpha = 0.5;
+					break;
+				case EN_COURS:
+					imageEtat = IMAGE_EN_COURS;
+					this.alpha = 1.0;
+					break;
+				case INVALIDE:
+					imageEtat = IMAGE_INVALIDE;
+					this.alpha = 0.3;
+					break;
+			}
+			this.gotoAndPlay(imageEtat);		
+			trace("créneau > set etat : " + etatNew + " / " + imageEtat + " > " + this.currentFrame);	
 		}
 		
 		public function compareDateACreneau(d:Date) {

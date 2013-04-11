@@ -125,7 +125,7 @@
 		/* ---------------------------------------------------------------- */
 
 		private function afficherMessage(message:String) {
-			Scenario.getInstance().messageGeneral._afficherMessage(message);
+			Scenario.getInstance().messageGeneral._afficherMessage(message + "\n");
 		}
 
 		// statut indique si la création est ok		
@@ -466,6 +466,7 @@
 					selectedPatient.listeActionsTraitementParSeance			= new Array();
 					selectedPatient.listeActionsTraitementChoisiesParSeance	= new Array();
 					selectedPatient.listeStatutsActionsChoisiesParSeance = new Vector.<Boolean>();
+					selectedPatient.nbSeancesTraitement = listeSeances.length;
 					for each (var seance:Seance in listeSeances) {
 						// ajout du libellé de la séance au tableau des séances
 						dgListeSeancesTraitement.addItem({creneau:"---", libelle_seance:seance.libelle});
@@ -687,6 +688,18 @@
 					premiereSeanceEnCours && !accesDiagnostic;
 				// désactivation des choix des actions de vérification si déjà validé correctement
 				patientProperties.actionsVerification.listeChoixOrdonnes.setEnabled(!accesDiagnostic);
+
+				// le combo box de choix d'une thérapie et le bouton de validation d'une thérapie
+				// ne sont pas visible/accessible si un diagnostic n'a pas été préalablement choisi 
+				if (!selectedPatient.accesDiagnostic || !selectedPatient.diagnosticChoisi) {
+					patientProperties.traitement.boutonValiderTherapie.visible = false;
+					patientProperties.traitement.cbListeTherapies.enabled = false;
+				}
+				// le bouton de validation d'actions de traitement n'est pas visible si on n'a pas
+				// encore accès au traitement (aucune thérapie pertinente n'a encore été choisie) 
+				if (!selectedPatient.accesTraitement) {
+					patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible = false;					
+				}
 				
 				// affichage du diagnostic si l'accès a déjà été donné
 				if (selectedPatient.accesDiagnostic) {
@@ -732,22 +745,24 @@
 								selectedPatient.getListeActionsTraitementChoisiesSeanceSelectionee();
 							patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles(listActionsTraitement);
 							patientProperties.traitement.listeChoixOrdonnes.setListeChoix(listActionsTraitementChoisies);
+
+							// accès au bouton de validation des actions de traitement si :
+							// - une séance de traitement est bien en cours
+							// - c'est bien cette séance qui est sélectionnée dans la liste des séances
+							// - on n'a pas déjà effectué cette validation
+							var statutActionsTraitementChoisies:Boolean =
+								selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee];
+							patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
+								seanceTraitementEnCours &&
+								(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
+								!statutActionsTraitementChoisies;
+							// désactivation des choix des actions de traitement si déjà validé correctement
+							patientProperties.traitement.listeChoixOrdonnes.setEnabled(!statutActionsTraitementChoisies);
 						}
 						else {
 							patientProperties.traitement.listeChoixOrdonnes.setListeChoixPossibles([]);
 						}
-						// accès au bouton de validation des actions de traitement si :
-						// - une séance de traitement est bien en cours
-						// - c'est bien cette séance qui est sélectionnée dans la liste des séances
-						// - on n'a pas déjà effectué cette validation
-						var statutActionsTraitementChoisies:Boolean =
-							selectedPatient.listeStatutsActionsChoisiesParSeance[selectedPatient.indiceSeanceSelectionee];
-						patientProperties.traitement.listeChoixOrdonnes.boutonValiderChoix.visible =
-							seanceTraitementEnCours &&
-							(selectedPatient.indiceCreneauEnCours - 1 == selectedPatient.indiceSeanceSelectionee) &&
-							!statutActionsTraitementChoisies;
-						// désactivation des choix des actions de traitement si déjà validé correctement
-						patientProperties.traitement.listeChoixOrdonnes.setEnabled(!statutActionsTraitementChoisies);
+
 					}
 				}
 
