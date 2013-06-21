@@ -1,6 +1,7 @@
 ﻿package scenariofactory.widgets{
 
 	import flash.display.MovieClip;
+	import flash.text.TextFormat;
 	import fl.controls.Button;
 	import flash.events.MouseEvent;
 
@@ -8,6 +9,7 @@
 
 		var zoneCliquee:Boolean;
 		var choix:String;
+		var format:TextFormat = new TextFormat();
 
 		// constructeur
 		public function ZoneDeClic() {
@@ -16,6 +18,10 @@
 			zoneCliquee = false;
 			// interactivité
 			this.addEventListener(MouseEvent.CLICK, zoneAppuyee);
+
+			// stylage et contenu initial du bouton
+			format.size = 14;
+			this.setStyle("textFormat", format);
 			this.label = "";
 		}
 

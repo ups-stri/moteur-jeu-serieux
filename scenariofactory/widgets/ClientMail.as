@@ -18,6 +18,9 @@
 			trace("occurence of ClientMail : "+this.name);
 			// interactivity
 			this.iconeMail.addEventListener(MouseEvent.CLICK, clickOnIcon);
+			this.iconeMail.addEventListener(MouseEvent.ROLL_OVER, montreAide);
+			this.iconeMail.addEventListener(MouseEvent.ROLL_OUT, cacheAide);
+			this.aide.visible = false;
 		}
 
 		private function clickOnIcon(e:MouseEvent):void
@@ -28,11 +31,29 @@
 			}
 		}
 		
+		private function montreAide(e:MouseEvent):void
+		{
+			if (!iconeMail.enabled) {
+				aide.visible = true;
+			}
+		}
+
+		private function cacheAide(e:MouseEvent):void
+		{
+			if (!iconeMail.enabled) {
+				aide.visible = false;
+			}
+		}
+
 		public function disableButton():void
 		{
 			trace("dans méthode disableButton");
 			this.iconeMail.enabled = false;
 			this.iconeMail.alpha = 0.5;
+			
+			// pour éviter que le mail reste dans l'état ouvert
+			// lorsque le bouton sera à nouveau actif
+			this._mailOpen = false;
 		}
 		
 		public function enableButton():void
@@ -45,5 +66,16 @@
 		{
 			return _mailOpen;
 		}
+
+		public function mailUnread():void
+		{
+			this.gotoAndStop(2);
+		}
+
+		public function mailRead():void
+		{
+			this.gotoAndStop(1);
+		}
+
 	}
 }

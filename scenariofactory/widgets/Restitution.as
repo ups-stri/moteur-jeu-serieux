@@ -1,110 +1,1 @@
-﻿package scenariofactory.widgets
-{
-
-	import flash.events.Event;
-	import flash.events.MouseEvent;
-	import flash.display.MovieClip;
-	import flash.text.TextField;
-	import flash.text.TextFieldAutoSize;
-	import flash.text.TextFormat;
-	
-	import scenariofactory.Scenario;
-
-	public class Restitution extends Widget
-	{
-
-		var choice:String = "";
-		var listeRestitution:Array = [];
-		var listeVideos:Array = [];
-
-		// constructor
-		public function Restitution()
-		{
-			trace("occurence of Restitution : "+this.name);
-			// loader
-			loader.visible = false;
-
-			listeRestitution[0] = "Eléments généraux";	 					
-			listeRestitution[1] = "Sur le choix d'une machine"; 					// choix_machine : portable ou PC
-			listeRestitution[2] = "Sur le choix du partage réseau";					// partage_reseau : ou ou non
-			listeRestitution[3] = "Sur le fait d'éteindre le PC fixe";				// a_eteint_PC : 0 ou 1
-			listeRestitution[4] = "Sur le choix du type de connexion";				// choix_connexion : wi-fi ou filaire
-			listeRestitution[5] = "Sur le double popup de connexion";				// doute_VPN : non, technicien, patron
-			listeRestitution[6] = "Sur le popup de l'enfant";						// refus_popup_enfant : oui on non
-			listeRestitution[7] = "Sur l'utilisation d'une clé USB";				// refus_cle_enfant : oui on non
-			listeRestitution[8] = "Sur le choix de l'accès à l'image du rapport";	// choix_acces_elements : mail ou cle
-			listeRestitution[9] = "Sur l'impression réseau";						// impression_reseau : oui on non
-			listeRestitution[10] = "Sur le prêt de machine";						// demande_conjoint : ou on non
-			//listeRestitution[11] = "Sur les images cadeau";
-			
-		}
-
-		public function setTitle(liste:Array)
-		{
-			trace("setTitle()");
-			// display title
-			textTitle.text = liste[1];
-		}
-
-		public function displayItems(liste:Array):void
-		{
-			trace("displayItems() restitution");
-			// liste : <item id="0" name="choix_machine" value="root" />...
-			// liste : <item id="1" name="choix_machine" value="root" />...
-
-			// format
-			var format:TextFormat = new TextFormat();
-			format.font = "Arial";
-			format.color = 0xFFFFFF;
-			format.size = 14;
-			format.bold = false;
-			format.underline = false;
-			
-			var separation:Number = 25;
-
-			// textAreaRestitution
-			for (var oneItem:String in liste)
-			{
-				var conteneurVar:String = liste[oneItem].itemValue;
-				var conteneurClip:MovieClip = this.root as MovieClip;
-				conteneurClip = (nomVar == "root" ? conteneurClip : conteneurClip[conteneurVar]);
-				var nomVar:String    = liste[oneItem].itemName;
-				var accesValeurVar:Object = conteneurClip[nomVar];
-				var valeurVar:String = (accesValeurVar == null ? "indéfini" : (accesValeurVar)());
-				
-				trace("   item n°"+oneItem+", item="+liste[oneItem].itemName+", value="+liste[oneItem].itemValue);
-				//this["button"+item].label = liste[item].texte;
-				var textItem = new TextField();
-				textItem.x = 40;
-				textItem.y = 50 + Number(oneItem) * separation;
-				textItem.autoSize = TextFieldAutoSize.LEFT;
-				textItem.background = false;
-				textItem.border = false;
-				textItem.defaultTextFormat = format;
-				textItem.text = listeRestitution[Number(oneItem)] + " : " + valeurVar;
-				addChild(textItem);
-				
-				// icône vidéo
-				var iconeVideo:IconeVideo = new IconeVideo;
-				iconeVideo.name = oneItem;
-				iconeVideo.x = 10;
-				iconeVideo.y = 50 + Number(oneItem) * separation;
-				iconeVideo.addEventListener(MouseEvent.CLICK, displayVideo);
-				iconeVideo.numeroItem = oneItem;
-				iconeVideo.item = liste[oneItem].itemName;
-				iconeVideo.valeurVar = valeurVar;
-				addChild(iconeVideo);
-			}
-		}
-		public function displayVideo(e:MouseEvent):void
-		{
-			trace("displayVideo(), currentTarget : "+e.currentTarget.name);
-			trace("n° : "+e.currentTarget.numeroItem+", item : "+e.currentTarget.item+", valeur variable : "+e.currentTarget.valeurVar);
-			var videoName = "actifs/actifs_restitution/"+e.currentTarget.numeroItem+"_"+e.currentTarget.item+"_"+e.currentTarget.valeurVar+"_expert.flv";
-			trace("vidéo : "+videoName);
-			loader.visible = true;
-			loader.source = videoName;
-		}
-
-	}
-}
+﻿package scenariofactory.widgets{	import flash.events.Event;	import flash.events.MouseEvent;	import flash.events.TimerEvent;	import flash.utils.Timer;	import flash.net.URLRequest;	import flash.display.MovieClip;	import flash.display.Loader; 	import flash.text.TextField;	import flash.text.TextFieldAutoSize;	import flash.text.TextFormat;	import fl.video.FLVPlayback;	import fl.video.VideoEvent;		import scenariofactory.Scenario;	public class Restitution extends Widget	{		var choice:String = "";		var listeRestitution:Array = [];		var listeVideos:Array = [];				// pour chaque vidéo (indice de ce tableau), est défini une liste d'émotions		// de personnage devant apparaitre à un moment de la vidéo, pendant une certaine durée		private var listeEmotionsPersosParVideo:Array =			[//  0 : éléments généraux :			 [],  // non applicable			 //  1 : choix_machine			 {'portable':	[{startTime:  5.0, duration:  5.0, perso: 'allibert', emotion: 'content'}],		      'PC':			[{startTime:  6.0, duration:  5.0, perso: 'jansen',   emotion: 'colere'},			  				 {startTime: 11.0, duration:  3.0, perso: 'cleo',     emotion: 'content'},							 {startTime: 11.0, duration:  3.0, perso: 'richard',  emotion: 'content'},							 {startTime: 14.0, duration:  5.0, perso: 'marie',    emotion: 'mitige'},							 {startTime: 34.0, duration:  1.0, perso: 'allibert', emotion: 'mitige'}]},							 			 //  2 : partage_reseau			 {'oui':		[{startTime: 11.0, duration:  5.0, perso: 'cleo',     emotion: 'content'},							 {startTime: 11.0, duration:  5.0, perso: 'richard',  emotion: 'content'}],			  'non':		[{startTime: 11.0, duration:  9.0, perso: 'cleo',     emotion: 'mitige'},			  				 {startTime: 11.0, duration:  9.0, perso: 'richard',  emotion: 'mitige'}]},			 //  3 : a_eteint_PC			 {'0':			[{startTime:  2.0, duration:  5.0, perso: 'cleo',     emotion: 'content'},			  				 {startTime:  2.0, duration:  5.0, perso: 'richard',  emotion: 'content'},			  				 {startTime: 21.0, duration:  5.0, perso: 'cleo',     emotion: 'mitige'},			  				 {startTime: 21.0, duration:  5.0, perso: 'richard',  emotion: 'mitige'}],			  '1':			[{startTime: 21.0, duration:  5.0, perso: 'cleo',     emotion: 'content'},			  				 {startTime: 21.0, duration:  5.0, perso: 'richard',  emotion: 'content'},							 {startTime: 28.0, duration:  5.0, perso: 'cleo',     emotion: 'mitige'},							 {startTime: 28.0, duration:  5.0, perso: 'richard',  emotion: 'mitige'}]},			 //  4 : choix_connexion			 {'wi-fi':		[{startTime: 24.0, duration:  6.0, perso: 'allibert', emotion: 'colere'}],			  'filaire':	[{startTime: 16.0, duration:  3.0, perso: 'jansen',   emotion: 'content'},			  				 {startTime: 16.0, duration:  3.0, perso: 'allibert', emotion: 'content'}]},			 //  5 : doute_VPN			 {'non':		[{startTime: 23.0, duration:  8.0, perso: 'allibert', emotion: 'mitige'},			  				 {startTime: 23.0, duration:  8.0, perso: 'jansen',   emotion: 'mitige'},							 {startTime: 35.0, duration:  4.0, perso: 'marie',    emotion: 'mitige'}],			  'patron':		[{startTime:  6.0, duration:  5.0, perso: 'allibert', emotion: 'content'},			  				 {startTime: 12.0, duration:  9.0, perso: 'marie',    emotion: 'mitige'},							 {startTime: 14.0, duration: 13.0, perso: 'allibert', emotion: 'mitige'}],			  'technicien':	[{startTime:  7.0, duration: 20.0, perso: 'jansen',   emotion: 'content'},			  				 {startTime: 17.0, duration:  6.0, perso: 'marie',    emotion: 'mitige'},							 {startTime: 29.0, duration:  8.0, perso: 'jansen',   emotion: 'mitige'}]},			 //  6 : refus_popup_enfant			 {'non':		[{startTime:  2.0, duration:  7.0, perso: 'cleo',     emotion: 'content'},							 {startTime: 23.0, duration:  7.0, perso: 'jansen',   emotion: 'mitige'}],			  'oui':		[{startTime:  3.0, duration: 11.0, perso: 'cleo',     emotion: 'colere'},			  				 {startTime: 14.0, duration:  7.0, perso: 'jansen',   emotion: 'content'}]},			 //  7 : refus_cle_enfant			 {'non':		[{startTime:  3.0, duration:  2.0, perso: 'cleo',     emotion: 'mitige'},			  				 {startTime:  5.0, duration:  7.0, perso: 'cleo',     emotion: 'content'},			  				 {startTime:  9.0, duration: 12.0, perso: 'allibert', emotion: 'mitige'},			  				 {startTime: 14.0, duration:  7.0, perso: 'jansen',   emotion: 'mitige'}],			  'oui':		[{startTime: 11.0, duration:  3.0, perso: 'cleo',     emotion: 'colere'},			  				 {startTime: 30.0, duration:  6.0, perso: 'jansen',   emotion: 'mitige'}]},			  //  8 : choix_acces_elements			 {'mail':		[{startTime:  6.0, duration:  7.0, perso: 'jansen',   emotion: 'pas_content'}],			  'cle':		[{startTime: 10.0, duration:  5.0, perso: 'jansen',   emotion: 'content'},			  				 {startTime: 27.0, duration: 12.0, perso: 'marie',    emotion: 'mitige'},							 {startTime: 27.0, duration: 12.0, perso: 'allibert', emotion: 'mitige'}]},			  //  9 : impression_reseau			 {'oui':		[{startTime:  3.0, duration:  5.0, perso: 'richard',  emotion: 'content'},			  				 {startTime: 21.0, duration: 12.0, perso: 'jansen',   emotion: 'mitige'},			  				 {startTime: 23.0, duration: 10.0, perso: 'allibert', emotion: 'mitige'}],			  'non':		[{startTime:  7.0, duration:  10.0, perso: 'jansen',   emotion: 'content'}]},			  // 10 : demande_conjoint			 {'oui':		[{startTime: 10.0, duration:  7.0, perso: 'richard',  emotion: 'content'},			  				 {startTime: 16.0, duration:  8.0, perso: 'marie',    emotion: 'mitige'},			  				 {startTime: 35.0, duration: 11.0, perso: 'jansen',   emotion: 'mitige'},			  				 {startTime: 35.0, duration: 11.0, perso: 'allibert', emotion: 'mitige'}],			  'non':		[{startTime:  2.0, duration:  8.0, perso: 'richard',  emotion: 'mitige'},			  				 {startTime: 12.0, duration:  8.0, perso: 'marie',    emotion: 'mitige'},							 {startTime: 17.0, duration:  3.0, perso: 'allibert', emotion: 'mitige'},							 {startTime: 28.0, duration:  3.0, perso: 'marie',    emotion: 'colere'},							 {startTime: 31.0, duration:  5.0, perso: 'marie',    emotion: 'content'}]}			];					// indice éventuel de la vidéo en cours de diffusion		private var noVideo:int;		// valeur de la variable correspondant à cette vidéo		private var valeurVar:String;		static private var largeurClipEmotionPerso:int = 129;		static private var hauteurClipEmotionPerso:int = 71;		static private var espacementHorizClipEmotionPerso:int = 6;		// liste d'objets graphiques correspondant aux émotions de personnage actuellement		// présentes au-dessus de la vidéo		// ex. d'un tel objet : { perso: 'allibert', emotion: 'content', image: <référence du Loader>(*)}		// (*) ce Loader est contenu dans le clip de nom d'occurrence mc_emotions_perso		private var listeImagesEmotionsPerso:Array = new Array();				// constructor		public function Restitution()		{			trace("occurence of Restitution : "+this.name);			// loader			loader.visible = false;			loader.addEventListener(VideoEvent.PLAYHEAD_UPDATE, updateEmotionPerso);						listeRestitution[0] = "Eléments généraux";	 								listeRestitution[1] = "Sur le choix d'une machine"; 					// choix_machine : portable ou PC			listeRestitution[2] = "Sur le choix du partage réseau";					// partage_reseau : ou ou non			listeRestitution[3] = "Sur le fait d'éteindre le PC fixe";				// a_eteint_PC : 0 ou 1			listeRestitution[4] = "Sur le choix du type de connexion";				// choix_connexion : wi-fi ou filaire			listeRestitution[5] = "Sur le double popup de connexion";				// doute_VPN : non, technicien, patron			listeRestitution[6] = "Sur le popup de l'enfant";						// refus_popup_enfant : oui on non			listeRestitution[7] = "Sur l'utilisation d'une clé USB";				// refus_cle_enfant : oui on non			listeRestitution[8] = "Sur le choix de l'accès à l'image du rapport";	// choix_acces_elements : mail ou cle			listeRestitution[9] = "Sur l'impression réseau";						// impression_reseau : oui on non			listeRestitution[10] = "Sur le prêt de machine";						// demande_conjoint : ou on non			//listeRestitution[11] = "Sur les images cadeau";					}		public function setTitle(liste:Array)		{			trace("setTitle()");			// display title			textTitle.text = liste[1];		}		public function displayItems(liste:Array):void		{			trace("displayItems() restitution");			// liste : <item id="0" name="choix_machine" value="root" />...			// liste : <item id="1" name="choix_machine" value="root" />...			// format			var format:TextFormat = new TextFormat();			format.font = "Arial";			format.color = 0xFFFFFF;			format.size = 14;			format.bold = false;			format.underline = false;						var separation:Number = 25;			// textAreaRestitution			for (var oneItem:String in liste)			{				var conteneurVar:String = liste[oneItem].itemValue;				var conteneurClip:MovieClip = this.root as MovieClip;				conteneurClip = (nomVar == "root" ? conteneurClip : conteneurClip[conteneurVar]);				var nomVar:String    = liste[oneItem].itemName;				var accesValeurVar:Object = conteneurClip[nomVar];				var valeurVar:String = (accesValeurVar == null ? "indéfini" : (accesValeurVar)());								trace("   item n°"+oneItem+", item="+liste[oneItem].itemName+", value="+liste[oneItem].itemValue);				//this["button"+item].label = liste[item].texte;				var textItem = new TextField();				textItem.x = 40;				textItem.y = 50 + Number(oneItem) * separation;				textItem.autoSize = TextFieldAutoSize.LEFT;				textItem.background = false;				textItem.border = false;				textItem.defaultTextFormat = format;				textItem.text = listeRestitution[Number(oneItem)] +				                (Number(oneItem) > 0 ? " : " + valeurVar : "");				addChild(textItem);								// icône vidéo				var iconeVideo:IconeVideo = new IconeVideo;				iconeVideo.name = oneItem;				iconeVideo.x = 10;				iconeVideo.y = 50 + Number(oneItem) * separation;				iconeVideo.addEventListener(MouseEvent.CLICK, displayVideo);				iconeVideo.numeroItem = oneItem;				iconeVideo.item = liste[oneItem].itemName;				iconeVideo.valeurVar = valeurVar;				addChild(iconeVideo);			}		}				// nom du fichier correspondant à une émotion donnée d'un personnage donné		private function nomfichierEmotionPerso(emotionPerso:Object):String {			return emotionPerso.perso + "_" + emotionPerso.emotion + ".png";		}				// suppression des images d'émotions de personnages actuellement présentes		private function viderListeImagesEmotionsPerso():void {			var imageEmotionPerso:Object;			while (listeImagesEmotionsPerso.length > 0) {				imageEmotionPerso = listeImagesEmotionsPerso.pop();				this['mc_emotions_perso'].removeChild(imageEmotionPerso.image);			}		}				// recherche dans listeEmotionsPerso l'émotion de personnage correspondant		// aux propriétés de emotionPerso et retourne son indice s'il est trouvé		// -1 sinon 		private function rechercherEmotionPerso(emotionPerso:Object): int {			var imageEmotionsPerso:Object			for (var i:int = 0 ; i < listeImagesEmotionsPerso.length ; i++) {				imageEmotionsPerso = listeImagesEmotionsPerso[i];				if (imageEmotionsPerso.perso   == emotionPerso.perso &&				    imageEmotionsPerso.emotion == emotionPerso.emotion) {						return i;				}			}			return -1;		}				// ajout d'une émotion d'un personnage si elle n'est pas déjà présente		private function ajouterEmotionPerso(emotionPerso:Object):void {			if (rechercherEmotionPerso(emotionPerso) < 0) {				trace("ajouterEmotionPerso : " + emotionPerso.perso + " / " + emotionPerso.emotion);				// ajout du clip correspondant s'il n'y est pas encore				var loaderImageEmotionPerso:Loader = new Loader();				loaderImageEmotionPerso.load(new URLRequest("actifs/actifs_restitution/emotions_perso/" +				                                            nomfichierEmotionPerso(emotionPerso)))				this['mc_emotions_perso'].addChild(loaderImageEmotionPerso);				var nbImages:int = listeImagesEmotionsPerso.length;				loaderImageEmotionPerso.x = nbImages * (largeurClipEmotionPerso + espacementHorizClipEmotionPerso);				listeImagesEmotionsPerso.push({perso: emotionPerso.perso, emotion:emotionPerso.emotion,					                           image: loaderImageEmotionPerso});			}		}				// retrait d'une émotion d'un personnage si elle est bien présente		private function enleverEmotionPerso(emotionPerso:Object):void {			var indiceImageEmotionPerso:int = rechercherEmotionPerso(emotionPerso);			if (indiceImageEmotionPerso >= 0) {				// suppression du clip correspondant s'il n'y est effectivement				trace("enleverEmotionPerso : " + emotionPerso.perso + " / " + emotionPerso.emotion);					this['mc_emotions_perso'].removeChild(listeImagesEmotionsPerso[indiceImageEmotionPerso].image);				listeImagesEmotionsPerso.splice(indiceImageEmotionPerso, 1);				for (var i:int = indiceImageEmotionPerso ; i < listeImagesEmotionsPerso.length ; i++) {					listeImagesEmotionsPerso[i].image.x -=						largeurClipEmotionPerso + espacementHorizClipEmotionPerso;				}			}		}				// indique si un temps donné (en secondes, avec décimales) est compris dans un		// intervalle défini par un temps initial et une durée		private function timeInInterval(time:Number, startTime:Number, duration:Number):Boolean {			return time >= startTime && time <= startTime + duration; 		}				// fonction appelé tous les 1/4 sec lors de la diffusion d'une vidéo de restitution,		// afin de mettre à jour les images des émotions de personnage devant être diffusées		// à un moment donné de cette vidéo		private function updateEmotionPerso(event: VideoEvent):void {			trace("updateEmotionPerso : " + event.playheadTime);			// récupération de la liste minutée des émotions de personnage			// de la vidéo en cours de diffusion			var listeEmotionsPersosParValeurVar:Object = listeEmotionsPersosParVideo[noVideo];			var listeEmotionsPersos:Array = listeEmotionsPersosParValeurVar[valeurVar];						// récupération de la position temporelle actuelle de la lecture de la vidéo			var videoTime:Number = event.playheadTime;	// égal aussi à loader.playheadTime						// balayge de planification du démarrage des éventuelle émotions de personnages liées à cette vidéo			for each (var emotionPerso:Object in listeEmotionsPersos) {				if (timeInInterval(videoTime, emotionPerso.startTime, emotionPerso.duration)) {					ajouterEmotionPerso(emotionPerso);				}				else {					enleverEmotionPerso(emotionPerso);				}			} 		}				// fonction non utilisée : envisagée au départ pour planifier les		// apparitions et dispartions d'émotions de personnage, mais serait		// devenu assez compliqué pour gérer la mise en pause ou l'avance/recul		// manuel dans la vidéo de la part de l'utilisateur		/*		private function planifierEmotionPerso(emotionPerso:Object):void {			var timer:Timer = new Timer(emotionPerso.startTime, 1);			timer.addEventListener(TimerEvent.TIMER,			                       function (evt:Event):void {									   ajouterEmotionPerso(emotionPerso);						  			   var timer:Timer = new Timer(emotionPerso.duration, 1);									   timer.addEventListener(TimerEvent.TIMER,			                       	                          function (evt:Event):void {															      enleverEmotionPerso(emotionPerso);															  });									   timer.start();								   })			timer.start();		}*/				// affichage de la vidéo correspondant à l'icône cliquée 		public function displayVideo(e:MouseEvent):void		{			// récupération de l'indice de cette vidéo et de la valeur de la variable correspondante			noVideo = Number(e.currentTarget.numeroItem);			valeurVar = e.currentTarget.valeurVar;						// suppression les éventuelles émotions de personnage présentes au-dessus de la vidéo			// (dont la présence résulte de la précédente vidéo visionnée)			viderListeImagesEmotionsPerso();									trace("displayVideo(), currentTarget : "+e.currentTarget.name);			trace("n° : " + noVideo + ", item : " + e.currentTarget.item +			      ", valeur variable : " + e.currentTarget.valeurVar);			var videoName = "actifs/actifs_restitution/" + e.currentTarget.numeroItem + "_" +			                e.currentTarget.item + "_" + valeurVar + "_expert.flv";			trace("vidéo : "+videoName);			loader.visible = true;			loader.source = videoName;		}	}}
