@@ -104,8 +104,8 @@
 			GlobalVarContainer.vars.nbChargementsEnCours--;
 
 			// temporaire
-			Scenario.getInstance().messageGeneral.texteMessage.width = 345;
-			Scenario.getInstance().messageGeneral.texteMessage.height = 560;
+			Scenario.getInstance().messageGeneral.texteMessage.width = 307;
+			Scenario.getInstance().messageGeneral.texteMessage.height = 560; // 400 (pour voir la zone de débug)
 		}
 		private function codeHTTP(pEvt:HTTPStatusEvent):void
 		{

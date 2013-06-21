@@ -1,10 +1,13 @@
 ﻿package scenariofactory.widgets
 {
+	import fl.controls.Slider;
+	import fl.containers.ScrollPane;
 	import fl.controls.ComboBox;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import fl.events.SliderEvent;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	import flash.utils.Timer;
@@ -20,12 +23,22 @@
 		// déclaration manuelle des occurrences de symboles placées sur la scène
 		public var boutonAgenda:MovieClip;
 		public var boutonAjoutCreneau:MovieClip;
-		public var radioButtonsDuration:MovieClip;
+		public var libelleCreneaux:TextField;
+		public var libelleDuree:TextField;
+		public var tfDureeCreneau:TextField;
+		public var sldDureeCreneau:Slider;
 		public var textDebug:TextField;
-		public var maintenant:MovieClip;
 		public var agendaTime:TextField;
-		public var fond:MovieClip;
+		public var calendrier:MovieClip;
+		public var conteneurCalendrier:ScrollPane;
+		public var libellePatient:TextField;
 		public var cbPatients:ComboBox;
+		
+		// largeur de la légende des heures
+		private static const LARGEUR_LEGENDE_HEURE:int = 36;
+		
+		// nb de jours affichés dans la semaine
+		private static const NB_JOURS_SEMAINE:int = 6;
 		
 		// largeur d'un jour en pixel dans l'agenda
 		private static const LARGEUR_JOUR:int = 100;
@@ -39,19 +52,20 @@
 		private static const HEURE_DEBUT:int = 8;
 		
 		// nombre d'heures de travail affichées
-		private static const NB_HEURES:int = 13;
+		private static const NB_HEURES:int = 12;
 		
 		// date actuelle courant tout au long du jeu
 		private static var dateCourante:Date;
 		
 		// container of slots
-		var container:Sprite = new Sprite  ;
+		var conteneurCreneaux:Sprite = new Sprite;
+		
 		// rectangle for avatar drag
 		private var rect:Rectangle;
 		// selected slot
 		var selectedSlot:Creneau;
-		// selected duration
-		var selectedDuration:Number = 1;
+		// selected duration (en minutes)
+		var dureeCreneau:int;
 		// patients 
 		//var listPatients:Array = [];
 		// open or close
@@ -59,7 +73,8 @@
 		// Timer
 		private var agendaTimer:Timer;
 		// temps
-		var listeJours:Array = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+		var listeJours:Array = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi',
+		                        'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 		var idJourCourant:Number = 0;
 
 		// constructor
@@ -69,34 +84,63 @@
 
 			// bouton
 			boutonAgenda.addEventListener(MouseEvent.CLICK, openOrClose);
-			// container for slots;
-			addChild(container);
+			
 			// rectangle for drag
 			initRectangle(600,520);
+			
 			// add slot
 			boutonAjoutCreneau.addEventListener(MouseEvent.CLICK, buttonAddSlot);
+			
 			// handler for duration;
-			radioButtonsDuration.addEventListener(MouseEvent.CLICK, radioHandler);
-			//;
+			sldDureeCreneau.addEventListener(SliderEvent.CHANGE, HchangeDureeCreneau);
+
 			textDebug.text = "";
-			// comboBox for patients (launched by DossierPatients)
-			// mask elements
+			
+			// masquage des éléments (ne marche pas, cf. méthode demarrer()
+			//conteneurCalendrier.addEventListener(Event.INIT, function (e:Event) { masqueElements(); });
+		}
+
+		// démarre effectivement l'agenda, en particulier relativement à son timer
+		public function demarrer() {
+			trace("Agenda > demarrer()");
+			
+			// création du fond de l'agenda (calendrier sur deux semaines)
+			// et rattachement au conteneur permettant de le visualiser en scrollant
+			// (remarque : ne marche pas dans le constructeur, trop tôt sans doute)
+			calendrier = new AGEND_Fond;
+			conteneurCalendrier.source = calendrier;
+			
+			// container for slots
+			calendrier.addChild(conteneurCreneaux);
+
+			// on masque les éléments à ce moment-là car sinon fond (ScrollPane) n'est
+			// pas masqué dans le constructeur (a priori car il n'est pas encore totalement
+			// initialisé), malgré le fait d'attendre l'événement Event.INI
 			masqueElements();
+			
+			// initialisation du libellé de la durée par défaut d'un créneau
+			dureeCreneau = sldDureeCreneau.value;
+			changeDureeCreneau(dureeCreneau);
+			
 			// time running (timer de Scenario pas possible car pas forcément créé !)
 			agendaTimer = new Timer(5000,0);
 			agendaTimer.addEventListener("timer",updateAgenda);
 			agendaTimer.start();
-
 		}
 
 		// conversion d'une position (x, y) dans l'agenda vers un jour-heure-minute
 		// pour plus de commodités, on va utiliser la classe A.S. Date en se plaçant
 		// à un mois d'une année dont le jour 1 tombe un lundi : lundi 01/04/2013
 		public static function DateFromPosXY(X: int, Y:int):Date {
+			X = X - LARGEUR_LEGENDE_HEURE;
 			var jour:Number			= 1 + Math.floor(X / LARGEUR_JOUR);
+			if (X > NB_JOURS_SEMAINE * LARGEUR_JOUR) {
+				X -= LARGEUR_LEGENDE_HEURE;
+				jour++;	// pour compter le dimanche qui n'est pas affiché
+			}
 			var deltaHeures:Number	= Math.floor(Y / HAUTEUR_HEURE);
 			var heures:Number		= HEURE_DEBUT + deltaHeures;
-			var minutes:Number		= Math.floor((Y - deltaHeures * HAUTEUR_HEURE) * 60 / HAUTEUR_HEURE);
+			var minutes:Number		= Math.round((Y - deltaHeures * HAUTEUR_HEURE) * 60 / HAUTEUR_HEURE);
 
 			return new Date(2013, 3, jour, heures, minutes);
 		}
@@ -151,6 +195,11 @@
 					patient = PatientAgenda.getPatientParId(creneau.idPatient);
 					civilitePatient = patient.getCivilite();
 					indiceCreneau = patient.setCreneauEnCours(creneau);
+					// ce créneau ne pourra plus être déplacé
+					// (FIXME améliorer en migrant dans classe Creneau, ainsi que les méthodes
+					//        addSlot() .. positionSlot())
+					creneau.removeEventListener(MouseEvent.MOUSE_DOWN, dragSlot);
+					creneau.removeEventListener(MouseEvent.MOUSE_UP,   stopSlot);
 					// il faut vérifier que le créneau correspond bien à quelque chose
 					// cf. PatientAgenda.setCreneauEnCours > commentaires
 					if (creneau.etat != Creneau.INVALIDE) {
@@ -215,16 +264,25 @@
 		private function updateAgenda(event:Event)
 		{
 			// y
-			maintenant.y = maintenant.y + 5;
+			calendrier.maintenant.y += 5;
 			// test sur journée
-			if (maintenant.y > NB_HEURES * HAUTEUR_HEURE)
+			if (calendrier.maintenant.y > NB_HEURES * HAUTEUR_HEURE)
 			{
-				idJourCourant++;
-				maintenant.y = 0;
-				maintenant.x = idJourCourant * LARGEUR_JOUR;
+				if (idJourCourant < 2 * NB_JOURS_SEMAINE - 1) {
+					// on n'a pas encore atteint la fin de la semaine
+					idJourCourant++;
+					calendrier.maintenant.y = 0;
+					calendrier.maintenant.x = LARGEUR_LEGENDE_HEURE + idJourCourant * LARGEUR_JOUR +
+						(idJourCourant >= NB_JOURS_SEMAINE ? LARGEUR_LEGENDE_HEURE : 0);
+				}
+				else {
+					// la fin de la semaine est atteinte
+					calendrier.maintenant.y -= 5;
+					agendaTimer.stop();
+				}
 			}
 			// affichage
-			dateCourante = DateFromPosXY(maintenant.x, maintenant.y);
+			dateCourante = DateFromPosXY(calendrier.maintenant.x, calendrier.maintenant.y);
 			
 			var minutestext:String = dateCourante.getMinutes().toString();
 			if (dateCourante.getMinutes() < 10){
@@ -255,29 +313,56 @@
 		public function masqueElements():void
 		{
 			isOpen = true;
-			fond.visible = false;
+			conteneurCalendrier.visible = false;
 			boutonAjoutCreneau.visible = false;
-			radioButtonsDuration.visible = false;
+			libelleCreneaux.visible = false;
+			libelleDuree.visible = false;
+			tfDureeCreneau.visible = false;
+			sldDureeCreneau.visible = false;
+			libellePatient.visible = false;
 			cbPatients.visible = false;
-			container.visible = false;
 			textDebug.visible = false;
-			maintenant.visible = false;
 		}
 		public function demasqueElements():void
 		{
 			isOpen = false;
-			fond.visible = true;
+			conteneurCalendrier.visible = true;
 			boutonAjoutCreneau.visible = true;
-			radioButtonsDuration.visible = true;
+			libelleCreneaux.visible = true;
+			libelleDuree.visible = true;
+			tfDureeCreneau.visible = true;
+			sldDureeCreneau.visible = true;
+			libellePatient.visible = true;
 			cbPatients.visible = true;
-			container.visible = true;
 			textDebug.visible = true;
-			maintenant.visible = true;
 		}
-		function radioHandler(event:MouseEvent):void
+
+		private function dureeMinutesToString(dureeMin:int) {
+			var dureeString:String;
+			var dureeHeure = Math.floor(dureeMin / 60);
+
+			dureeMin = dureeMin % 60;
+			if (dureeHeure > 0) {
+				dureeString = dureeHeure + " h " +
+				              (dureeMin > 0 ? dureeMin : "");
+			}
+			else {
+				dureeString = dureeMin + " min";
+			}
+
+			return dureeString;
+		}
+		
+		function HchangeDureeCreneau(event:SliderEvent):void
 		{
-			selectedDuration = event.target.value;
-			textDebug.appendText("\ndurée : " + selectedDuration);
+			dureeCreneau = event.value;
+			changeDureeCreneau(dureeCreneau);
+		}
+
+		function changeDureeCreneau(dureeCreneau:int):void
+		{
+			tfDureeCreneau.text = dureeMinutesToString(dureeCreneau);
+			textDebug.appendText("\ndurée : " + dureeCreneau);
 		}
 
 		public function buttonAddSlot(e:MouseEvent):void
@@ -285,31 +370,34 @@
 			// remove all focus
 			removeAllFocus();
 			// Launched by click on "add slot button")
-			var durationS:Number = Number(selectedDuration);
+			var durationS:int = dureeCreneau;
 			// duration, position x, position y, patient id
-			addSlot(durationS, e.currentTarget.x, e.currentTarget.y);
+			// (- 120 pour que le créneau à ajouter soit visible dans conteneurCalendrier)
+			textDebug.appendText("\n" + e.currentTarget.x + "," + e.currentTarget.y);
+			addSlot(durationS, e.currentTarget.x, e.currentTarget.y - 120);
 		}
 
-		public function addSlot(durationS:Number, positionX:Number, positionY:Number, idPatient:Number=0):void
+		public function addSlot(durationS:int, positionX:Number, positionY:Number, idPatient:Number=0):void
 		{
 			textDebug.appendText("\nslot: duration : " + durationS.toString());
 			// adding slot on scene;
 			var slot:Creneau = new Creneau;
+			var dureeHeures:Number = durationS / 60;
 			slot.etat = Creneau.FUTUR;
-			slot.duration = 1 / durationS; // en nombre d'heures
+			slot.duration = dureeHeures; // en nombre d'heures
 			slot.idPatient = idPatient;
 			slot.x = positionX;
 			slot.y = positionY;
-			slot.slotBackground.height = slot.slotBackground.height / durationS;
-			slot.focus.height = slot.focus.height / durationS;
+			slot.slotBackground.height *= dureeHeures;
+			slot.focus.height *= dureeHeures;
 			// delete button
 			slot.deleteButton.visible = false;
 			slot.deleteButton.addEventListener(MouseEvent.CLICK,deleteSlot);
 			// drag;
-			slot.addEventListener(MouseEvent.MOUSE_DOWN,dragSlot);
-			slot.addEventListener(MouseEvent.MOUSE_UP,stopSlot);
+			slot.addEventListener(MouseEvent.MOUSE_DOWN, dragSlot);
+			slot.addEventListener(MouseEvent.MOUSE_UP,   stopSlot);
 			// add to stage
-			container.addChild(slot);
+			conteneurCreneaux.addChild(slot);
 		}
 
 		private function dragSlot(e:MouseEvent):void
@@ -322,7 +410,7 @@
 			selectedSlot.focus.visible = true;
 			selectedSlot.deleteButton.visible = true;
 			// drag
-			e.currentTarget.startDrag(false,rect);
+			e.currentTarget.startDrag(false, rect);
 		}
 
 		private function stopSlot(e:MouseEvent):void
@@ -335,7 +423,7 @@
 		private function deleteSlot(e:MouseEvent):void
 		{
 			// delete slot
-			container.removeChild(selectedSlot);
+			conteneurCreneaux.removeChild(selectedSlot);
 			selectedSlot = null;
 			// cb invisible
 			cbPatients.visible = false;
@@ -346,12 +434,19 @@
 			// accurately position slot (grid LARGEUR_JOUR px x HAUTEUR_HEURE/4 px)
 			var gridX:Number = LARGEUR_JOUR;
 			var gridY:Number = HAUTEUR_HEURE / 4;
-			var xPosition:Number = Math.floor(selectedSlot.x / gridX) * gridX;
-			var yPosition:Number = Math.floor(selectedSlot.y / gridY) * gridY;
+			var noSemaineSlot = (selectedSlot.x > LARGEUR_JOUR * NB_JOURS_SEMAINE + 1.5 * LARGEUR_LEGENDE_HEURE ? 2 : 1);
+			var xPosition:Number = noSemaineSlot * LARGEUR_LEGENDE_HEURE +
+			                       Math.round((selectedSlot.x - (noSemaineSlot * LARGEUR_LEGENDE_HEURE)) / gridX) * gridX;
+			var yPosition:Number = Math.round(selectedSlot.y / gridY) * gridY;
+			textDebug.appendText("\avant : selectedSlot.x = " + selectedSlot.x + ", selectedSlot.y = " + selectedSlot.y);
+			textDebug.appendText("\noSemaineSlot = " + noSemaineSlot);
 			selectedSlot.x = xPosition;
 			selectedSlot.y = yPosition;
 			// comprendre l'ajustement "- HAUTEUR_HEURE" réalisée dans la ligne suivante
 			selectedSlot.date = DateFromPosXY(selectedSlot.x, selectedSlot.y - HAUTEUR_HEURE);
+			textDebug.appendText("\après : selectedSlot.x = " + selectedSlot.x + ", selectedSlot.y = " + selectedSlot.y);
+			
+			// tri éventuel des créneaux du même patient concerné par ce créneau
 			if (selectedSlot.idPatient > 0) {
 				PatientAgenda.getPatientParId(selectedSlot.idPatient).trieListeCreneaux();
 			}
@@ -363,9 +458,9 @@
 
 		private function removeAllFocus():void
 		{
-			for (var i:uint = 0; i < container.numChildren; i++)
+			for (var i:uint = 0; i < conteneurCreneaux.numChildren; i++)
 			{
-				var currentSlot = container.getChildAt(i);
+				var currentSlot:Creneau = Creneau(conteneurCreneaux.getChildAt(i));
 				// remove focus and delete button
 				currentSlot.focus.visible = false;
 				currentSlot.deleteButton.visible = false;

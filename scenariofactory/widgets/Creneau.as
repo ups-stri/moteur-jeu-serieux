@@ -28,7 +28,7 @@ package scenariofactory.widgets {
 		// date de début du créneau
 		public var date:Date;
 		
-		// durée du créneau en heure (résolution : 0.25 : 1/4 h)
+		// durée du créneau en heure (résolution : 0.25 : 1/4 h ; min : 0.25 ; max : 3.0)
 		public var duration:Number;
 		
 		public var idPatient:int;	// pour lequel ce créneau a été pris
