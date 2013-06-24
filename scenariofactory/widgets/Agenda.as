@@ -86,7 +86,8 @@
 			boutonAgenda.addEventListener(MouseEvent.CLICK, openOrClose);
 			
 			// rectangle for drag
-			initRectangle(600,520);
+			initRectangle(2 * NB_JOURS_SEMAINE * LARGEUR_JOUR + LARGEUR_LEGENDE_HEURE,
+			              NB_HEURES * HAUTEUR_HEURE);
 			
 			// add slot
 			boutonAjoutCreneau.addEventListener(MouseEvent.CLICK, buttonAddSlot);
@@ -396,6 +397,7 @@
 			// drag;
 			slot.addEventListener(MouseEvent.MOUSE_DOWN, dragSlot);
 			slot.addEventListener(MouseEvent.MOUSE_UP,   stopSlot);
+			slot.buttonMode = true;	// -> curseur en forme de main
 			// add to stage
 			conteneurCreneaux.addChild(slot);
 		}
@@ -434,17 +436,20 @@
 			// accurately position slot (grid LARGEUR_JOUR px x HAUTEUR_HEURE/4 px)
 			var gridX:Number = LARGEUR_JOUR;
 			var gridY:Number = HAUTEUR_HEURE / 4;
-			var noSemaineSlot = (selectedSlot.x > LARGEUR_JOUR * NB_JOURS_SEMAINE + 1.5 * LARGEUR_LEGENDE_HEURE ? 2 : 1);
+			var noSemaineSlot = (selectedSlot.x > LARGEUR_JOUR * NB_JOURS_SEMAINE +
+			                                      LARGEUR_LEGENDE_HEURE ? 2 : 1);
 			var xPosition:Number = noSemaineSlot * LARGEUR_LEGENDE_HEURE +
 			                       Math.round((selectedSlot.x - (noSemaineSlot * LARGEUR_LEGENDE_HEURE)) / gridX) * gridX;
+			// recalage si le créneau déborde de la première semaine
+			if (noSemaineSlot == 1) {
+				xPosition = Math.min(xPosition, LARGEUR_LEGENDE_HEURE + (NB_JOURS_SEMAINE - 1) * LARGEUR_JOUR);
+			}
 			var yPosition:Number = Math.round(selectedSlot.y / gridY) * gridY;
-			textDebug.appendText("\avant : selectedSlot.x = " + selectedSlot.x + ", selectedSlot.y = " + selectedSlot.y);
-			textDebug.appendText("\noSemaineSlot = " + noSemaineSlot);
 			selectedSlot.x = xPosition;
 			selectedSlot.y = yPosition;
 			// comprendre l'ajustement "- HAUTEUR_HEURE" réalisée dans la ligne suivante
 			selectedSlot.date = DateFromPosXY(selectedSlot.x, selectedSlot.y - HAUTEUR_HEURE);
-			textDebug.appendText("\après : selectedSlot.x = " + selectedSlot.x + ", selectedSlot.y = " + selectedSlot.y);
+			textDebug.appendText("\ndate du créneau : " + selectedSlot.date.toString());
 			
 			// tri éventuel des créneaux du même patient concerné par ce créneau
 			if (selectedSlot.idPatient > 0) {
@@ -453,7 +458,8 @@
 		}
 		private function initRectangle(largeur:Number,hauteur:Number):void
 		{
-			rect = new Rectangle(0, HAUTEUR_HEURE, largeur - LARGEUR_JOUR, hauteur);
+			rect = new Rectangle(LARGEUR_LEGENDE_HEURE, HAUTEUR_HEURE,
+			                     largeur - LARGEUR_JOUR, hauteur - HAUTEUR_HEURE);
 		}
 
 		private function removeAllFocus():void
