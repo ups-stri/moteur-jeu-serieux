@@ -29,16 +29,13 @@
 		// constructeur
 		public function TelephoneSimple()
 		{
-			trace("occurrence de Telephone : "+this.name);
+			trace("occurrence de TelephoneSimple : "+this.name);
 			// arrêt de la l'animation de Telephone
 			combine.stop();
 			// sonnerie ;
 			dureeSonnerie = 0;
 			// interactivité
 			combine.addEventListener(MouseEvent.CLICK, clicTelephone);
-			// son;
-			sonTelephone = new Sound();
-			sonTelephone.load(new URLRequest("./actifs/sons/231.mp3"));
 		}
 
 		public function sonner():void
@@ -47,12 +44,18 @@
 			// son;
 			demarreSon();
 			// sonnerie
+			dureeSonnerie = 0;
 			telephoneTimer = new Timer(1000,0);
 			telephoneTimer.addEventListener("timer", compteDureeSonnerie);
 			telephoneTimer.start();
 		}
 		public function demarreSon():void
 		{
+			// son;
+			if (sonTelephone == null) {
+				sonTelephone = new Sound();
+				sonTelephone.load(new URLRequest("./actifs/sons/231.mp3"));
+			}
 			channel = new SoundChannel();
 			channel = sonTelephone.play();
 			channel.addEventListener(Event.SOUND_COMPLETE, boucle);
@@ -68,14 +71,26 @@
 			dureeSonnerie++;
 		}
 
+
+		// arrêt de la sonnerie :
+		// - du timer associé qui comptait le nb de sonneries
+		// - de la boucle sur le son d'une sonnerie élémentaire
+		private function arreterSonnerie():void{
+			if (telephoneTimer != null) {
+				telephoneTimer.stop();
+			}
+			dureeSonnerie = 0;
+			if (channel != null) {
+				channel.removeEventListener(Event.SOUND_COMPLETE, boucle);
+				channel.stop();
+			}
+		}
+		
 		public function arreter():void
 		{
 			decroche = false;
 			combine.gotoAndStop(1);
-			telephoneTimer.stop();
-			dureeSonnerie = 0;
-			channel.removeEventListener(Event.SOUND_COMPLETE, boucle);
-			channel.stop();
+			arreterSonnerie();
 		}
 
 		// MB : 18/10/11 : cette méthode n'a pas besoin d'être publique
@@ -91,8 +106,7 @@
 				// le téléphone est décroché;
 				combine.gotoAndStop(12);
 				decroche = true;
-				channel.removeEventListener(Event.SOUND_COMPLETE, boucle);
-				channel.stop();
+				arreterSonnerie();
 			}
 		}
 

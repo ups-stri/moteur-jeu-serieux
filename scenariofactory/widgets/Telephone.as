@@ -42,6 +42,7 @@
 			// son;
 			demarreSon();
 			// sonnerie
+			dureeSonnerie = 0;
 			telephoneTimer = new Timer(1000,0);
 			telephoneTimer.addEventListener("timer", compteDureeSonnerie);
 			telephoneTimer.start();
@@ -68,11 +69,10 @@
 			dureeSonnerie++;
 		}
 
-		public function arreter():void
-		{
-			decroche = false;
-			combine.gotoAndStop(1);
-			repertoire.disparait();
+		// arrêt de la sonnerie :
+		// - du timer associé qui comptait le nb de sonneries
+		// - de la boucle sur le son d'une sonnerie élémentaire
+		private function arreterSonnerie():void{
 			if (telephoneTimer != null) {
 				telephoneTimer.stop();
 			}
@@ -81,6 +81,14 @@
 				channel.removeEventListener(Event.SOUND_COMPLETE, boucle);
 				channel.stop();
 			}
+		}
+		
+		public function arreter():void
+		{
+			decroche = false;
+			combine.gotoAndStop(1);
+			repertoire.disparait();
+			arreterSonnerie();
 		}
 
 		// MB : 18/10/11 : cette méthode n'a pas besoin d'être publique
@@ -99,10 +107,7 @@
 				// le téléphone est décroché;
 				combine.gotoAndStop(12);
 				decroche = true;
-				if (channel != null) {
-					channel.removeEventListener(Event.SOUND_COMPLETE, boucle);
-					channel.stop();
-				}
+				arreterSonnerie();
 			}
 		}
 

@@ -112,6 +112,10 @@
             return _instance;
         }
 		
+		public function dureeEcouleeJeu():Number {
+			return gameTimer.currentCount * gameTimer.delay / 1000;
+		}
+		
 		public function _bringToFront(e:MouseEvent):void {
 			// clipParent : différentes possibilités : 
 			// - instance de Scenario si le widget cliqué est directement
@@ -139,15 +143,22 @@
 			//myGotoAndStop(10,test3);
 			// lancement moteur
 			moteur2();
-
 		}
-		private function moteur2():void
+		public function moteur2():void
 		{
 			// lancement
 			jeuLance = true;
-			// moteur (Classe Timer) : toutes les secondes, une infinité de fois
+			// moteur (Classe Timer) : toutes les demi-secondes, une infinité de fois
 			gameTimer = new Timer(500,0);
 			gameTimer.addEventListener("timer", checkRules);
+			gameTimer.start();
+		}
+
+		// remet le timer du jeu à 0 (pour bien compter le temps de jeu, et pas
+		// le temps initial dans la fenêtre d'accueil)
+		public function demarreTempsJeu():void
+		{
+			gameTimer.reset();
 			gameTimer.start();
 		}
 
@@ -175,7 +186,7 @@
 		private function checkRules(event:Event)
 		{
 			trace("");
-			trace("in checkRules : time="+gameTimer.currentCount);
+			trace("in checkRules : time=" + dureeEcouleeJeu());
 			var nomCible:String;
 			
 			// règles

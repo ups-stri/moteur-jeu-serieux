@@ -91,6 +91,7 @@
 			trace("   chargement de " + gameFile);
 			chargeur.load(new URLRequest(gameFile));
 			GlobalVarContainer.vars.nbChargementsEnCours++;
+			trace("+++++ Jeu : " + GlobalVarContainer.vars.nbChargementsEnCours);
 		}
 
 		private function chargementTermine(pEvt:Event):void
@@ -102,6 +103,8 @@
 			creeObjets(donnneesXML);
 			// affichage des données
 			GlobalVarContainer.vars.nbChargementsEnCours--;
+			trace(">>>>> " + GlobalVarContainer.vars.nbChargementsEnCours);
+			trace(donnneesXML);
 
 			// temporaire
 			Scenario.getInstance().messageGeneral.texteMessage.width = 307;
@@ -147,18 +150,18 @@
 		public function creeTempsPoisson():Array
 		{
 			// temps
-			//var liste:Array = [11, 23, 40, 55];
-			var liste:Array = [5, 40];
+			var liste:Array = [11, 23, 40, 55];
+			//var liste:Array = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 			return liste;
 		}
 		public function tempsEvenementAtteint():Boolean
 		{
 			// test si temps de jeu > prochain temps
-			if (Scenario.getInstance().gameTimer.currentCount > this.listeTempsPoisson[0])
+			if (Scenario.getInstance().dureeEcouleeJeu() >= this.listeTempsPoisson[0])
 			{
 				// temps atteint
-				trace("temps de jeu : " + Scenario.getInstance().gameTimer.currentCount + ", listeTempsPoisson : " + listeTempsPoisson);
-				listeTempsPoisson.shift();
+				trace("temps de jeu : " + Scenario.getInstance().dureeEcouleeJeu() + ", listeTempsPoisson : " + listeTempsPoisson);
+				this.listeTempsPoisson.shift();
 				return true;
 			}
 			else
@@ -169,7 +172,7 @@
 		public function tempsFinDeJeuAtteint():Boolean
 		{
 			// test si temps de jeu > temps limite
-			if (Scenario.getInstance().gameTimer.currentCount >= this.dureeEnSecondes)
+			if (Scenario.getInstance().dureeEcouleeJeu() >= this.dureeEnSecondes)
 			{
 				// fin de jeu
 				trace("\n---------------------------------------------------------------------------------------------");
@@ -197,11 +200,20 @@
 				return false;
 			}
 		}
+
+		// démarrage effectif du jeu
+		public function demarrer():void {
+			trace("demarrage du jeu");
+			// démarrage du temps de jeu
+			Scenario.getInstance().demarreTempsJeu();
+		}
+
 		function afficheDonnees():void
 		{
 			trace("\n---------------------------------------------------------------------------------------------");
 			trace("---------------------------------------------------------------------------------------------");
-			trace("Données du jeu : " + this.nbEvenements_jeu + " événement(s)");
+			trace("Données du jeu : " + this.nbEvenements_jeu + " événement(s) ;" +
+			      "le premier est le prochain à être joué");
 			for (var i:Number = 0; i < this.listeEvenements_jeu.length; i++)
 			{
 				var unEvenement:Evenement_jeu = listeEvenements_jeu[i];
@@ -212,18 +224,21 @@
 		}
 		public function lanceEvenement():void
 		{
+			trace("lanceEvenement()");
 			for (var i:Number = 0; i < this.listeEvenements_jeu.length; i++)
 			{
+				afficheDonnees();
 				//var unEvenement:Evenement_jeu = listeEvenements_jeu[i];
 				// on fait descendre la pile d'événements
 				var unEvenement:Evenement_jeu = listeEvenements_jeu.shift();
 				listeEvenements_jeu.push(unEvenement);
+				//listeEvenements_jeu[listeEvenements_jeu.length] = unEvenement;
 				// si cet événement pas déjà joué et pas d'autre événéments en cours 
 				if (! unEvenement.dejaJoue && ! Evenement_jeu.evenementsEnCours)
 				{
 					nbEvenements_jeu_lances++;
 					trace("\n---------------------------------------------------------------------------------------------");
-					trace("Lancement d'un événement, time=" + Scenario.getInstance().gameTimer.currentCount + ", nombre d'événements lancés =" + nbEvenements_jeu_lances);
+					trace("Lancement d'un événement, time=" + Scenario.getInstance().dureeEcouleeJeu() + ", nombre d'événements lancés =" + nbEvenements_jeu_lances);
 					// nombre d'événements lancés
 					this.evenementEnCours = unEvenement;
 					// indicateur événement en cours
