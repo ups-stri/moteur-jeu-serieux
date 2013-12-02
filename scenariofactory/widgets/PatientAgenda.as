@@ -32,6 +32,9 @@
 		
 		public var motifConsultIniPatient:String;
 		public var commentairesPatient:String;
+
+		// liste des documents médicaux du patient
+		public var listeDocumentsMedicaux:Array = [];
 		
 		// cas dont relève ce patient
 		public var cas:Cas;
@@ -44,6 +47,9 @@
 		// liste de ces actions qu'il a sélectionné
 		public var listeActionsPremiereSeance:Array = [];
 
+		// liste des éventuels documents médicaux libérés par chaque action de vérification
+		public var listeDocMedicauxLiberes:Array;
+		
 		// liste des actions de traitement pour chacune des séances de traitement prévues
 		// chaque élément est un tableau des actions prévues pour la séance en question
 		public var listeActionsTraitementParSeance:Array;
@@ -122,6 +128,17 @@
 		
 		public static function getPatientParId(idPatient:int):PatientAgenda {
 			return listePatients[idPatient - 1];
+		}
+		
+		public function getListeIndicesDocsMedicauxVisible():Array {
+			var listeIndicesDocsMedicauxVisible:Array = new Array();
+			for (var i = 0 ; i < listeDocumentsMedicaux.length; i++) {
+				if (!listeDocumentsMedicaux[i].verrouille) {
+					listeIndicesDocsMedicauxVisible.push(i);
+				}
+			}
+			
+			return listeIndicesDocsMedicauxVisible;
 		}
 		
 		public function getListeCreneauxAgenda():Vector.<Creneau> {

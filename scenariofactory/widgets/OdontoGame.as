@@ -150,7 +150,7 @@
 		public function creeTempsPoisson():Array
 		{
 			// temps
-			var liste:Array = [11, 23, 40, 55];
+			var liste:Array = [1, 11, 23, 40, 55];
 			//var liste:Array = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 			return liste;
 		}

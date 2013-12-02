@@ -74,6 +74,7 @@
 			patientProperties.actionsVerification.visible	= false;
 			patientProperties.diagnostic.visible			= false;
 			patientProperties.traitement.visible			= false;
+			patientProperties.documents.listDocMedical.addEventListener(Event.CHANGE, HAfficherDocMedical);
 			
 			// Civilité
 			
@@ -253,12 +254,14 @@
 				patientProperties.allTabs.contexte.alpha = 1;
 				patientProperties.allTabs.diagnostic.alpha = 1;
 				patientProperties.allTabs.traitement.alpha = 1;
+				patientProperties.allTabs.documents.alpha = 1;
 			}
 			else {
 				textDebug2.appendText("\ndisplayProperties() : désactivation onglets médicaux du patient");
 				patientProperties.allTabs.contexte.alpha = 0.5;
 				patientProperties.allTabs.diagnostic.alpha = 0.5;
 				patientProperties.allTabs.traitement.alpha = 0.5;
+				patientProperties.allTabs.documents.alpha = 0.5;
 			}
 		}
 			
@@ -297,6 +300,11 @@
 					// rétablissement éventuel de la bonne casse du nom du patient
 					selectedPatient.nomPatient = selectedPatient.textPatient.text = patient.getNom();
 					afficherMsgCreationPatientAttendu(true, selectedPatient.getCivilite());
+
+					// récupération des documents médicaux du patient
+					selectedPatient.listeDocumentsMedicaux = patient.getListeDocuments();
+
+					// récupération des informations liées au cas du patient
 					var cas:Cas = patient.getCas();
 					selectedPatient.cas = cas; // mémorisation du cas dont relève ce patient
 					trace("récupération du cas du patient patient : " + selectedPatient.getCivilite() + ", cas : " + selectedPatient.cas);
@@ -305,13 +313,30 @@
 					trace("Récupération des actions de vérification de la première séance : " +
 						  cas.premiereSeance.libelle + " (" + nbActions + ")");
 					selectedPatient.listeActionsVerification = new Array();
-
+					selectedPatient.listeDocMedicauxLiberes = new Array();
+					
 					for (var i:int = 0; i < nbActions; i++) {
-						libelleAction = cas.premiereSeance.listeActions[i].libelle;
+						var action:Action = cas.premiereSeance.listeActions[i];
+						libelleAction = action.libelle;
 						trace(libelleAction);
 						selectedPatient.listeActionsVerification.push(libelleAction);
 						// le choix du diagnostic n'est pas visible tant que les actions
 						// de vérifications requises n'ont pas toutes été trouvées
+						
+						// si l'accomplissement de cette action conduit à libérer un document médical,
+						// on le mémorise ici
+						var documentMedical:Document = null;
+						if (action.libere != '') {
+							trace("### " + action.libelle + " / " + action.libere);
+							var motif:RegExp = /^.*@detaille_par\.(\d+)$/;
+							if (action.libere.match(motif) != null) {
+								var IndiceStr:String = action.libere.replace(motif, '$1');
+								var indiceDocMedical:uint = uint(IndiceStr);
+								trace("indiceDocMedical : "+ indiceDocMedical);
+								documentMedical = selectedPatient.listeDocumentsMedicaux[indiceDocMedical];
+							}
+						}
+						selectedPatient.listeDocMedicauxLiberes.push(documentMedical);
 					}
 					
 					reglerOngletsActifs();
@@ -370,6 +395,22 @@
 			}
 			patientProperties.diagnostic.visible = selectedPatient.accesDiagnostic;
 			afficherMsgListeActionsVerif(selectedPatient.accesDiagnostic, selectedPatient.getCivilite());
+
+			// indépendamment de l'accès donné au diagnostic, on regarde pour chaque action
+			// de vérification qui a été demandée si un document médical est libéré
+			var listeActionsVerification:Array = selectedPatient.listeActionsVerification;
+			var listeDocMedicauxLiberes:Array  = selectedPatient.listeDocMedicauxLiberes;
+			var actionVerification:String;				
+			for (var i:int = 0; i < listeActionsVerification.length; i++) {
+				actionVerification = listeActionsVerification[i];
+				if (listeChoixActionsVerif.indexOf(actionVerification) >= 0) {
+					var documentMedical:Document = listeDocMedicauxLiberes[i];
+					if (documentMedical != null) {
+						trace("### " + actionVerification + " libère le document médical" + documentMedical.titre);
+						documentMedical.verrouille = false;
+					}
+				}
+			}
 			
 			if (selectedPatient.accesDiagnostic) {
 				// récupération et affichage de la liste des diagnostics possibles
@@ -590,6 +631,24 @@
 			updateProperties();
 		}
 		
+		public function HAfficherDocMedical(event:Event):void {
+            var indiceDocMedical:uint = patientProperties.documents.listDocMedical.selectedItem.data;
+			afficherDocMedical(indiceDocMedical);
+        }
+		
+		public function afficherDocMedical(indiceDocMedical:uint):void {
+            var docMedical:Object = selectedPatient.listeDocumentsMedicaux[indiceDocMedical];
+			patientProperties.documents.textTitreDocMedical.text = docMedical.titre;
+			patientProperties.documents.textDateDocMedical.text = docMedical.date;
+			patientProperties.documents.textDescDocMedical.text = docMedical.description;
+			if (docMedical.nom_image != '') {
+				patientProperties.documents.spImageDocMedical.source = "./dalada/images/" + docMedical.nom_image;
+			}
+			else {
+				patientProperties.documents.spImageDocMedical.source = null;
+			}
+        }
+		
 		public function updateProperties():void
 		{
 			textDebug2.appendText("\nupdateProperties() : patient n°"+selectedPatient.idPatient+", tab "+selectedTab+", nom "+selectedPatient.nomPatient);
@@ -672,7 +731,29 @@
 					}
 				}
 			}
+
+			// Documents médicaux (non verrouillées) du patient
+			// ------------------------------------------------
+
+			// 1) suppression éventuelle du précédent document médical affiché,
+			//    ainsi que de la liste des documents médicaux de ce patient
 						
+			if (selectedPatient.cas != null) {
+				// 2) récupération de la liste des documents médicaux de ce patient
+				trace("2) récupération de la liste des documents médicaux de ce patient");
+				var listeIndicesDocsMedicauxVisible:Array = selectedPatient.getListeIndicesDocsMedicauxVisible();
+				var indiceDocMedical:uint;
+				var docMedical:Object;
+				var dpListDocMedical:DataProvider = new DataProvider();
+				for (i = 0; i < listeIndicesDocsMedicauxVisible.length; i++) {
+					indiceDocMedical = listeIndicesDocsMedicauxVisible[i];
+					docMedical = selectedPatient.listeDocumentsMedicaux[indiceDocMedical];
+					trace("document médical : " + docMedical.titre);
+					dpListDocMedical.addItem({label:docMedical.titre, data:indiceDocMedical});
+				}
+				patientProperties.documents.listDocMedical.dataProvider = dpListDocMedical;
+			}
+			
 			// Sélection des actions de vérification devant mener au diagnostic
 			if (selectedPatient.listeActionsVerification != null) {
 				/* FIXME ceci pose encore problème à la compilation -> à résoudre :
@@ -815,6 +896,7 @@
 			patientProperties.actionsVerification.visible = false;
 			patientProperties.diagnostic.visible = false;
 			patientProperties.traitement.visible = false;
+			patientProperties.documents.visible = false;
 
 			switch (selectedTab) {
 				case "civilite":
@@ -837,6 +919,9 @@
 					patientProperties.traitement.visible = true;
 					patientProperties.boutonSauverPatient.visible = true;
 					patientProperties.actionsVerification.listeChoixOrdonnes.boutonValiderChoix.visible = false;
+					break;
+				case "documents":
+					patientProperties.documents.visible = true;
 					break;
 			}
 
