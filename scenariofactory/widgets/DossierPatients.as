@@ -157,6 +157,12 @@
 			afficherMessage(message);
 		}
 		
+		private function afficherMsgLiberationDocMedical(actionVerification:String, docMedical:Document, civilite:String) {
+			message = "L'action de vérification \"" + actionVerification + "\" menée sur le patient " + civilite +
+			          " a permis de libérer le document médical \"" + docMedical.titre + "\".";
+			afficherMessage(message);
+		}
+		
 		public function afficherMsgSeanceActionsVerifEchue(civilite:String) {
 			message = "Vous n'êtes pas parvenu à indiquer une liste d'actions " +
 			          "de vérification ou à vous décider pour un diagnostic " +
@@ -405,9 +411,10 @@
 				actionVerification = listeActionsVerification[i];
 				if (listeChoixActionsVerif.indexOf(actionVerification) >= 0) {
 					var documentMedical:Document = listeDocMedicauxLiberes[i];
-					if (documentMedical != null) {
+					if (documentMedical != null && documentMedical.verrouille) {
 						trace("### " + actionVerification + " libère le document médical" + documentMedical.titre);
 						documentMedical.verrouille = false;
+						afficherMsgLiberationDocMedical(actionVerification, documentMedical, selectedPatient.getCivilite());
 					}
 				}
 			}
