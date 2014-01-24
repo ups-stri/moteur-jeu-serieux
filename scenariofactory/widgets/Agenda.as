@@ -34,6 +34,9 @@
 		public var libellePatient:TextField;
 		public var cbPatients:ComboBox;
 		
+		// message d'information affiché au joueur
+		private var message:String;
+
 		// largeur de la légende des heures
 		private static const LARGEUR_LEGENDE_HEURE:int = 36;
 		
@@ -46,7 +49,7 @@
 		// hauteur d'une heure en pixel dans l'agenda
 		// (prendre soit qu'il soit divisible par 4 puisque le plus petit
 		//  créneau possible est de 1/4 d'heure)
-		private static const HAUTEUR_HEURE:int = 40;
+		public static const HAUTEUR_HEURE:int = 40;
 
 		// heures du début de la journée de travail
 		private static const HEURE_DEBUT:int = 8;
@@ -101,6 +104,28 @@
 			//conteneurCalendrier.addEventListener(Event.INIT, function (e:Event) { masqueElements(); });
 		}
 
+		/* ---------------------------------------------------------------- */
+		/*            Fonctions de communication avec le joueur             */
+		/* ---------------------------------------------------------------- */
+
+		private function afficherMessage(message:String) {
+			Scenario.getInstance().messageGeneral._afficherMessage(message + "\n");
+		}
+
+		// indique qu'un créneau ne peut être positionné dans le passé
+		private function afficherMsgPosCreneauPasse() {
+			message = "Un créneau ne peut être positionné dans le passé. " + 
+			          "Il a donc été remis à sa position initiale.";	
+			afficherMessage(message);
+		}
+		
+		// indique qu'un créneau ne peut être positionné s'il intersecte avec un autre
+		private function afficherMsgPosCreneauIntersecte() {
+			message = "Un créneau ne peut être positionné en intersection avec un autre. " + 
+			          "Il a donc été remis à sa position initiale.";	
+			afficherMessage(message);
+		}
+		
 		// démarre effectivement l'agenda, en particulier relativement à son timer
 		public function demarrer() {
 			trace("Agenda > demarrer()");
@@ -144,6 +169,11 @@
 			var minutes:Number		= Math.round((Y - deltaHeures * HAUTEUR_HEURE) * 60 / HAUTEUR_HEURE);
 
 			return new Date(2013, 3, jour, heures, minutes);
+		}
+		
+		// retourne la date correspondant à la position du curseur de temps
+		public function getDateCourante(): Date {
+			return DateFromPosXY(calendrier.maintenant.x, calendrier.maintenant.y);	
 		}
 		
 		public static function dateFinCreneau(c:Creneau):Date {
@@ -207,8 +237,8 @@
 						trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"en cours\" : " +
 							  creneau.toString());
 						message = "Le patient " + civilitePatient + " vient d'arriver au cabinet pour sa séance n° " +
-						          (indiceCreneau + 1) + "\n";
-						Scenario.getInstance().messageGeneral._afficherMessage(message);
+						          (indiceCreneau + 1);
+						afficherMessage(message);
 					}
 					else {
 						message = "Le patient " + civilitePatient + " a un créneau dans l'agenda qui vient de démarrer, " +
@@ -221,7 +251,7 @@
 							message += "il s'agit d'un créneau surnuméraire par rapport aux nombre de séances " +
 								  	   "nécessaires à la thérapie choisie.";
 						}
-						Scenario.getInstance().messageGeneral._afficherMessage(message + "\n");
+						afficherMessage(message);
 					}
 				}
 				// 2.b) les créneaux en cours qui viennent de se terminer
@@ -254,8 +284,8 @@
 						indiceCreneau/* not used*/ = patient.setCreneauPasse(creneau);
 						trace("Le créneau suivant du patient " + civilitePatient  + " passe dans l'état \"passé\" : " +
 							  creneau.toString());
-						message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée\n";
-						Scenario.getInstance().messageGeneral._afficherMessage(message);
+						message = "Le patient " + civilitePatient + " vient de quitter le cabinet sa séance terminée";
+						afficherMessage(message);
 					}
 					
 				}
@@ -283,7 +313,7 @@
 				}
 			}
 			// affichage
-			dateCourante = DateFromPosXY(calendrier.maintenant.x, calendrier.maintenant.y);
+			dateCourante = getDateCourante();
 			
 			var minutestext:String = dateCourante.getMinutes().toString();
 			if (dateCourante.getMinutes() < 10){
@@ -393,7 +423,7 @@
 			slot.focus.height *= dureeHeures;
 			// delete button
 			slot.deleteButton.visible = false;
-			slot.deleteButton.addEventListener(MouseEvent.CLICK,deleteSlot);
+			slot.deleteButton.addEventListener(MouseEvent.CLICK, deleteSlot);
 			// drag;
 			slot.addEventListener(MouseEvent.MOUSE_DOWN, dragSlot);
 			slot.addEventListener(MouseEvent.MOUSE_UP,   stopSlot);
@@ -411,6 +441,10 @@
 			// focus and delete button
 			selectedSlot.focus.visible = true;
 			selectedSlot.deleteButton.visible = true;
+			// avant le démarrage du glisser-déposer, on mémorise la position de départ
+			// du créneau afin de la restaurer si la position d'arrivée est incorrecte
+			selectedSlot.x0 = selectedSlot.x; 
+			selectedSlot.y0 = selectedSlot.y; 
 			// drag
 			e.currentTarget.startDrag(false, rect);
 		}
@@ -424,6 +458,10 @@
 
 		private function deleteSlot(e:MouseEvent):void
 		{
+			// supprimer le créneau de la liste globale de tous les créneaux
+			// (s'il est associé à un patient, il est aussi supprimé de la liste de ses créneaux)
+			selectedSlot.supprimer();
+			
 			// delete slot
 			conteneurCreneaux.removeChild(selectedSlot);
 			selectedSlot = null;
@@ -440,22 +478,44 @@
 			                                      LARGEUR_LEGENDE_HEURE ? 2 : 1);
 			var xPosition:Number = noSemaineSlot * LARGEUR_LEGENDE_HEURE +
 			                       Math.round((selectedSlot.x - (noSemaineSlot * LARGEUR_LEGENDE_HEURE)) / gridX) * gridX;
+			var dateCreneau:Date;
+			var posCreneauValide:Boolean = true;
+			
 			// recalage si le créneau déborde de la première semaine
 			if (noSemaineSlot == 1) {
 				xPosition = Math.min(xPosition, LARGEUR_LEGENDE_HEURE + (NB_JOURS_SEMAINE - 1) * LARGEUR_JOUR);
 			}
 			var yPosition:Number = Math.round(selectedSlot.y / gridY) * gridY;
-			selectedSlot.x = xPosition;
-			selectedSlot.y = yPosition;
-			// comprendre l'ajustement "- HAUTEUR_HEURE" réalisée dans la ligne suivante
-			selectedSlot.date = DateFromPosXY(selectedSlot.x, selectedSlot.y - HAUTEUR_HEURE);
-			textDebug.appendText("\ndate du créneau : " + selectedSlot.date.toString());
+			selectedSlot.setPosition(xPosition, yPosition);
 			
-			// tri éventuel des créneaux du même patient concerné par ce créneau
-			if (selectedSlot.idPatient > 0) {
-				PatientAgenda.getPatientParId(selectedSlot.idPatient).trieListeCreneaux();
+			// vérification de la validité du créneau :
+			// 1) il doit être dans le futur
+			// 2) et ne pas intersecter avec un autre créneau déjà présent
+			dateCourante = getDateCourante();
+			if (selectedSlot.compareDateACreneau(dateCourante) >= 0) {
+				posCreneauValide = false;
+				afficherMsgPosCreneauPasse();
+			}
+			else if (selectedSlot.creneauIntersecte()) {
+				posCreneauValide = false;
+				afficherMsgPosCreneauIntersecte();
+			}
+			
+			if (posCreneauValide) {
+				textDebug.appendText("\ndate du créneau : " + selectedSlot.date.toString());
+				
+				// tri éventuel des créneaux du même patient concerné par ce créneau
+				if (selectedSlot.idPatient > 0) {
+					PatientAgenda.getPatientParId(selectedSlot.idPatient).trieListeCreneaux();
+				}
+			}
+			else {
+				// on signale le problème à l'utilisateur et on repositionne
+				// le créneau à sa position de départ
+				selectedSlot.setPosition(selectedSlot.x0, selectedSlot.y0);
 			}
 		}
+		
 		private function initRectangle(largeur:Number,hauteur:Number):void
 		{
 			rect = new Rectangle(LARGEUR_LEGENDE_HEURE, HAUTEUR_HEURE,

@@ -22,11 +22,20 @@ package scenariofactory.widgets {
 		public static const IMAGE_PASSE:int =    2; 
 		public static const IMAGE_EN_COURS:int = 3; 
 		public static const IMAGE_INVALIDE:int = 4; 
+		
+		// liste ordonnée chronologiquement de tous les créneaux créés dans l'agenda
+		// (rattachés ou pas à un patient)
+		private static var listeCreneaux:Vector.<Creneau> = new Vector.<Creneau>();
+
 		// état actuel		
 		private var _etat:int;
 		
 		// date de début du créneau
 		public var date:Date;
+		
+		// coordonnées du créneau mémorisées avant son déplacement
+		// (pour y retourner si la position d'arrivée est incorrecte)
+		public var x0, y0: Number;
 		
 		// durée du créneau en heure (résolution : 0.25 : 1/4 h ; min : 0.25 ; max : 3.0)
 		public var duration:Number;
@@ -34,9 +43,16 @@ package scenariofactory.widgets {
 		public var idPatient:int;	// pour lequel ce créneau a été pris
 		
 		function Creneau() {
-		
+			listeCreneaux.push(this);
 		}
 
+		function supprimer() {
+			listeCreneaux.splice(listeCreneaux.indexOf(this), 1);
+			if (this.idPatient > 0) {
+				PatientAgenda.getPatientParId(this.idPatient).removeCreneau(this);
+			}
+		}
+		
 		override public function toString():String {
 			return this.date.toString() + " [" + this.etat + "]";
 		}
@@ -89,10 +105,53 @@ package scenariofactory.widgets {
 			trace("créneau > set etat : " + etatNew + " / " + imageEtat + " > " + this.currentFrame);	
 		}
 		
+		// méthode à utiliser impérativement pour postionner un créneau
+		// (car elle calcule à la volée la date correspondant à cette position) 
+		public function setPosition(xPos, yPos):void {
+			this.x = xPos;
+			this.y = yPos;
+			calcDate();
+		}
+				
+		// calcule la date du créneau selon sa position (x, y)
+		// on en profite pour mettre à jour le tri chronologique de l'ensemble des créneaux
+		private function calcDate():void {
+			// comprendre l'ajustement "- HAUTEUR_HEURE" réalisée dans la ligne suivante
+			this.date = Agenda.DateFromPosXY(this.x, this.y - Agenda.HAUTEUR_HEURE);
+			trieListeCreneaux(listeCreneaux);
+		}
+
+		// retourne true si le créneau intersecte avec un des autres de la liste
+		// comme celle-ci est toujours triée, il suffit de comparer avec
+		// les éventuels précédent et suivant
+		public function creneauIntersecte():Boolean {
+			var intersecte:Boolean = false;
+			var indiceCreneau:int = listeCreneaux.indexOf(this);
+			var autreCreneau:Creneau;
+
+			trace("indiceCreneau : " + indiceCreneau);
+			trace("listeCreneaux : " + listeCreneaux.length);
+			
+			if (indiceCreneau > 0) {
+				// intersection avec le créneau qui précède ?
+				autreCreneau = listeCreneaux[indiceCreneau - 1];
+				intersecte = compareDateACreneau(Agenda.dateFinCreneau(autreCreneau)) > 0;
+				trace("intersection avec le créneau qui précède : " + intersecte);
+			}
+			
+			if (!intersecte && indiceCreneau < listeCreneaux.length - 1) {
+				// intersection avec le créneau qui suit ?	
+				autreCreneau = listeCreneaux[indiceCreneau + 1];
+				intersecte = Agenda.compareDates(Agenda.dateFinCreneau(this), autreCreneau.date) > 0;
+				trace("intersection avec le créneau qui suit : " + intersecte);
+			}
+
+			return intersecte;
+		}
+		
 		public function compareDateACreneau(d:Date) {
 			return d.getTime() - this.date.getTime();
 		}
-
 		
 		public function compareCreneau(c:Creneau) {
 			return this.date.getTime() - c.date.getTime();
