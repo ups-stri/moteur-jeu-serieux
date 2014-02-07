@@ -403,9 +403,12 @@
 			// Launched by click on "add slot button")
 			var durationS:int = dureeCreneau;
 			// duration, position x, position y, patient id
-			// (- 120 pour que le créneau à ajouter soit visible dans conteneurCalendrier)
-			textDebug.appendText("\n" + e.currentTarget.x + "," + e.currentTarget.y);
-			addSlot(durationS, e.currentTarget.x, e.currentTarget.y - 120);
+			// (- 120 en y et avec un décalage correspondant au scroll horizontal de conteneurCalendrier
+			//  pour que le créneau à ajouter soit visible dans celui-ci)
+			textDebug.appendText("\n" + e.currentTarget.x + "," + e.currentTarget.y + " / " +
+			                     "scroll x : " + conteneurCalendrier.horizontalScrollPosition);
+			addSlot(durationS, e.currentTarget.x + conteneurCalendrier.horizontalScrollPosition,
+			                   e.currentTarget.y - 120);
 		}
 
 		public function addSlot(durationS:int, positionX:Number, positionY:Number, idPatient:Number=0):void

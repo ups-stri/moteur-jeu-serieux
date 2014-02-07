@@ -18,10 +18,19 @@
 			texteMessage.text = "";
 		}
 
+		// affiche un message dans le widget de message permettant de dialoguer
+		// avec l'utilisateur
 		public function _afficherMessage(texte:String)
 		{
+			// si la barre de défilement verticale est déjà positionnée tout en bas,
+			// on va veiller à l'y remettre après affichage du message
+			var scrollbarIsDown:Boolean =
+				texteMessage.verticalScrollPosition == texteMessage.maxVerticalScrollPosition;  
 			trace("   message : "+texte);
 			texteMessage.text = texteMessage.text + texte + "\n";
+			if (scrollbarIsDown) {
+				texteMessage.verticalScrollPosition = texteMessage.maxVerticalScrollPosition;
+			}
 		}
 		
 
