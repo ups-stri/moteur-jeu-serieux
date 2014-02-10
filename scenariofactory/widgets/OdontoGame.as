@@ -142,18 +142,75 @@
 				this.nbEvenements_jeu = Evenement_jeu.nbEvenements;
 			}
 			// création des temps de Poisson
-			this.listeTempsPoisson = creeTempsPoisson();
+			var lambda, p1, p2:Number;
+			lambda = 15; p1 = 1; p2 = -1;
+			this.listeTempsPoisson = creeTempsPoisson(lambda, p1, p2);
 
 			// jeu prêt
 			this.gameIsLoaded = true;
 		}
-		public function creeTempsPoisson():Array
+
+		// P1 et P2 semblent inutiles dans la fonction, car hérité d'un jeu sur l'Automatisme
+		// avec une baleine de déplaçant à intervalles réguliers, et il semble qu'elles
+		// n'interviennent que pour ces déplacements 
+		public function creeTempsPoisson(lambda:Number, P1:Number, P2:Number):Array
 		{
-			// temps
-			var liste:Array = [1, 11, 23, 40, 55];
-			//var liste:Array = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
-			return liste;
+			// création du processus de Poisson
+			trace("dans creeTempsPoisson");
+		
+			// distribution uniforme
+			var listeVariableUniforme:Array = new Array();
+			var listeVariableExponentielle:Array = new Array();
+			var listeTempsPoissonCompose:Array = new Array();
+			var listeIntervallesPoissonCompose:Array = new Array();
+			var listeSauts:Array = new Array();
+		
+			trace("   variable uniforme");
+			for (var i:int = 0 ; i < 100; i++) {
+				listeVariableUniforme[i] = Math.random();
+				trace(listeVariableUniforme[i]);
+			}
+			trace("   processus de Poisson composé - variable exponentielle + Bernoulli");
+			var t:Number = 0;
+			var nombreDeTemps:Number = (listeVariableUniforme.length) / 2;
+			trace("   nombre de points : " + nombreDeTemps);
+			while (t < nombreDeTemps) {
+				// indicateur
+				var mPair:Number = t*2;
+				var mImpair:Number = t*2+1;
+				// intervalles de Poisson
+				listeVariableExponentielle[mPair] = -Math.log(listeVariableUniforme[mPair]/lambda);
+				// saut
+				var p:Number = listeVariableUniforme[mImpair];
+				listeSauts[t] = P1*p+P2*(1-p);
+				if (mPair > 0) {
+					listeTempsPoissonCompose[t] = listeTempsPoissonCompose[t-1] + listeVariableExponentielle[mPair];
+				} else {
+					// j = 0 : premier saut 
+					listeTempsPoissonCompose[t] = listeVariableExponentielle[mPair];
+				}
+				//trace("   n°="+t+", temps : "+listeTempsPoissonCompose[t]+", saut : "+listeSauts[t]);
+				t++;
+			}
+			// déplacement final et liste des intervalles
+			var deplacementFinal:Number = 0;
+			var tempsInitial:Number = 0;
+			for (var j:int = 0 ; j < listeSauts.length ; j++) {
+				listeIntervallesPoissonCompose[j] = listeTempsPoissonCompose[j]-tempsInitial;
+				deplacementFinal = deplacementFinal+listeSauts[j];
+				tempsInitial = listeTempsPoissonCompose[j];
+				trace("   temps : "+listeTempsPoissonCompose[j]+", saut : "+listeSauts[j]+", intervalle : "+listeIntervallesPoissonCompose[j]);
+			}
+			trace("   déplacement final : "+deplacementFinal);
+			
+			// mise des temps à l'échelle du jeu Dalada
+			for (var j:int = 0 ; j < listeTempsPoissonCompose.length ; j++) {
+				listeTempsPoissonCompose[j] *= 5;
+				trace("   temps : " + listeTempsPoissonCompose[j]);
+			}
+			return listeTempsPoissonCompose;
 		}
+		
 		public function tempsEvenementAtteint():Boolean
 		{
 			// test si temps de jeu > prochain temps
